@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ollama WebUi</title>
+
+    <script type="text/javascript">
+      (function () {
+        const isClient = typeof window !== "undefined";
+        if (isClient) {
+          const storageTheme = localStorage.getItem("webui-theme");
+          let theme = "light";
+
+          if (storageTheme === "system") {
+            theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          } else if (storageTheme) {
+            theme = storageTheme;
+          }
+
+          document.documentElement.classList.add(theme);
+          document.documentElement.style.backgroundColor = theme === "dark" ? "#0a0a0a" : "#FFFFFF";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
