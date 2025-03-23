@@ -8,8 +8,14 @@ const SidebarActionButton = () => {
 
   return (
     <div className="flex items-center justify-between gap-2">
-      <SidebarTrigger className="h-8 w-8 text-ring [&>svg]:!h-5 [&>svg]:!w-5" />
-      <Button variant="ghost" size="icon" aria-label="new-post" className="h-8 w-8 text-ring" onClick={() => navigate("/")}>
+      <SidebarTrigger className="h-9 w-9 text-ring [&>svg]:!h-5 [&>svg]:!w-5" />
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="new-post"
+        className="h-9 w-9 text-ring"
+        onClick={() => navigate("/")}
+      >
         <SquarePen className="!h-5 !w-5" />
       </Button>
     </div>
