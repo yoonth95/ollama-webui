@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from "@/shared/ui/sidebar";

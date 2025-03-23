@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
@@ -30,7 +28,9 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
     <li
       key={chat.id}
       className={cn(
-        `group/menu-item relative flex w-full justify-between rounded-md transition-colors ${isActive ? "bg-neutral-700/50" : ""}`,
+        `group/menu-item relative flex w-full justify-between rounded-md transition-colors ${
+          isActive ? "bg-neutral-700/50" : ""
+        }`,
         "dark:hover:bg-neutral-700/50",
       )}
       onMouseEnter={() => setHoveredRoom(chat.id)}
@@ -66,7 +66,12 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
           </Button>
         </DropdownMenuTrigger>
 
-        <ChatRoomItemMenu roomId={chat.id} roomTitle={roomTitle} setRoomTitle={setRoomTitle} setHoveredRoom={setHoveredRoom} />
+        <ChatRoomItemMenu
+          roomId={chat.id}
+          roomTitle={roomTitle}
+          setRoomTitle={setRoomTitle}
+          setHoveredRoom={setHoveredRoom}
+        />
       </DropdownMenu>
     </li>
   );

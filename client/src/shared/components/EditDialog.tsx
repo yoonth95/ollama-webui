@@ -1,5 +1,3 @@
-"use client";
-
 import { KeyboardEventHandler, useState } from "react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -15,7 +13,14 @@ interface EditDialogProps {
   cancelText?: string;
 }
 
-const EditDialog = ({ title, inputValue = "", open, onOpenChange, onConfirm, confirmText = "확인" }: EditDialogProps) => {
+const EditDialog = ({
+  title,
+  inputValue = "",
+  open,
+  onOpenChange,
+  onConfirm,
+  confirmText = "확인",
+}: EditDialogProps) => {
   const [value, setValue] = useState(inputValue);
 
   const handleConfirm = () => {
@@ -36,7 +41,12 @@ const EditDialog = ({ title, inputValue = "", open, onOpenChange, onConfirm, con
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <Input value={value} className="dark:bg-accent" onChange={(e) => setValue(e.target.value)} onKeyDown={handleEnter} />
+        <Input
+          value={value}
+          className="dark:bg-accent"
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleEnter}
+        />
         <DialogFooter className="flex justify-end space-x-2">
           <Button
             type="button"

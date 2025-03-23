@@ -1,5 +1,3 @@
-"use client";
-
 import { Dispatch, SetStateAction, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -57,7 +55,10 @@ const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: C
 
   return (
     <>
-      <DropdownMenuContent className="mt-[-5px] min-w-[10rem] space-y-2 border border-border bg-accent px-2 py-3" align="start">
+      <DropdownMenuContent
+        className="mt-[-5px] min-w-[10rem] space-y-2 border border-border bg-accent px-2 py-3"
+        align="start"
+      >
         <DropdownMenuItem
           className="flex cursor-pointer items-center gap-3 rounded-md p-3 text-sm dark:hover:bg-neutral-700/60"
           onClick={() => setShowEditDialog(true)}
@@ -86,7 +87,13 @@ const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: C
       />
 
       {/* 이름 변경 Alert */}
-      <EditDialog title="채팅방 이름 변경" open={showEditDialog} inputValue={roomTitle} onOpenChange={setShowEditDialog} onConfirm={handleRename} />
+      <EditDialog
+        title="채팅방 이름 변경"
+        open={showEditDialog}
+        inputValue={roomTitle}
+        onOpenChange={setShowEditDialog}
+        onConfirm={handleRename}
+      />
     </>
   );
 };
