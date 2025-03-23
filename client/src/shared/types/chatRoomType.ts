@@ -3,7 +3,7 @@ import { z } from "zod";
 export const ChatRoomSchema = z.object({
   id: z.string(),
   title: z.string(),
-  created_at: z.string(),
+  createdAt: z.string(),
 });
 
 export const CreateChatRoomRequestSchema = z.object({
