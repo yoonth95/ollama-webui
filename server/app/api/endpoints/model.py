@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 import logging
 from app.services.model import ModelService
@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 ## 다운 받은 모델 조회
-@router.get("/models")
+@router.get("/model/get-models")
 @handle_exceptions
 async def get_models():
   logger.info("🔍 클라이언트에서 모델 목록 요청 받음")
@@ -22,10 +22,11 @@ async def get_models():
 ## 모델 다운로드
 @router.get("/model/download")
 @handle_exceptions
-async def model_download(model_name: str = Query(..., description="다운로드할 모델 이름")):
-  logger.info(f"🔍 클라이언트에서 모델 다운로드 요청 받음: {model_name}")
+async def model_download(request: Request, model_name: str = Query(..., description="다운로드할 모델 이름")):
+  logger.info(f"🔍 클라이언트에서 {model_name} 모델 다운로드")
   
-  return await ModelService.model_download(model_name)
+  request.state.cancel = False  # 요청 상태에 취소 여부 추가
+  return await ModelService.model_download(model_name, request)
     
 ## 모델 다운로드 취소
 @router.post("/model/download-cancel")

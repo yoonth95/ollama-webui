@@ -1,5 +1,6 @@
 import aiohttp
 import json
+import httpx
 from fastapi.responses import JSONResponse
 from fastapi.responses import StreamingResponse
 from app.core.config import settings
@@ -7,6 +8,18 @@ from app.schemas.model import ModelInfo, ModelList
 from app.utils.stream_model_download import stream_model_download
 from app.utils.response import create_response
 from app.utils.download_manager import active_downloads, cancelled_downloads
+
+async def already_installed_response(model_name: str):
+  """이미 설치된 모델 응답을 비동기 제너레이터로 반환"""
+  yield json.dumps({
+    "ok": True,
+    "message": "이미 설치된 모델입니다.",
+    "data": {
+      "model_name": model_name,
+      "status": "already_installed",
+      "progress": 100
+    }
+  }) + "\n"
 
 class ModelService:
   @staticmethod
@@ -25,36 +38,27 @@ class ModelService:
         
         data = (ModelList(models=models).model_dump())["models"]
         return JSONResponse(content=create_response(True, "모델 목록 조회 성공", data), status_code=200)
-
-
+  
   @staticmethod
-  async def model_download(model_name: str) -> StreamingResponse:
+  async def model_download(model_name: str, request) -> StreamingResponse:
     ## 모델 다운로드 여부 체크
-    async with aiohttp.ClientSession() as session:
-      async with session.get(f"{settings.OLLAMA_API_BASE_URL}/api/tags") as response:
-        data = await response.json()
-        if len(data['models']) > 0 and model_name == data['models'][0]['model']:
-          return JSONResponse(content=create_response(False, "이미 설치된 모델입니다.", None), status_code=400)
-
-    # 모델 다운로드 진행
-    stream = stream_model_download(model_name)
+    async with httpx.AsyncClient() as client:
+      response = await client.get(f"{settings.OLLAMA_API_BASE_URL}/api/tags")
+      data = response.json()
+      
+      # 모델이 이미 설치되어 있는지 더 명확하게 확인
+      is_installed = False
+      if 'models' in data and data['models']:
+        for model in data['models']:
+          if model.get('model') == model_name:
+            is_installed = True
+            break
+      
+      if is_installed:
+        return StreamingResponse(already_installed_response(model_name), media_type="application/json")
     
-    first_chunk = await anext(stream, None)
-    try:
-      first_chunk = json.loads(first_chunk)
-      if not first_chunk["ok"]:
-        message_dic = json.loads(first_chunk["message"])
-        return JSONResponse(
-          content=create_response(False, message_dic["error"], None),
-          status_code=first_chunk["data"]["status"]
-        )
-    except Exception as e:
-      return JSONResponse(
-        content=create_response(False, "다운로드 실패", None),
-        status_code=500
-      )
-    
-    return StreamingResponse(stream, media_type="application/json")
+    ## 모델 다운로드
+    return StreamingResponse(stream_model_download(model_name, request), media_type="application/json")
   
   @staticmethod
   async def model_download_cancel(model_name: str):
