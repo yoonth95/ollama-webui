@@ -120,12 +120,21 @@
     @apply bg-background text-foreground;
   }
 
-  /* 사이드바 */
+  /* 스크롤바 */
   .themed-scrollbar::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   .themed-scrollbar {
     scrollbar-color: var(--color-muted-foreground) var(--color-sidebar);
+  }
+
+  /* 스크롤바 숨기기 */
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
