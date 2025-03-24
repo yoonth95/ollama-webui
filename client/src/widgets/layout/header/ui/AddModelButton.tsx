@@ -17,15 +17,19 @@ export default function AddModelButton({ inputValue, setInputValue }: AddModelBu
   return (
     <div>
       {!isPending ? (
-        <Button
-          variant="ghost"
-          aria-label="model-download"
-          onClick={handleDownload}
-          disabled={isPending}
-          className="w-full justify-start px-3 py-2 text-foreground dark:hover:bg-neutral-700/50"
-        >
-          Ollama.com에서 &quot;{inputValue}&quot; 모델 다운로드
-        </Button>
+        <div className="relative flex-1 overflow-x-auto whitespace-nowrap scrollbar-hidden">
+          <Button
+            variant="ghost"
+            aria-label="model-download"
+            onClick={handleDownload}
+            disabled={isPending}
+            className="w-full justify-start px-3 py-2 text-foreground dark:hover:bg-neutral-700/50 gap-0"
+          >
+            <span>Ollama.com에서 &quot;</span>
+            <span className="truncate">{inputValue}</span>
+            <span>&quot; 모델 다운로드</span>
+          </Button>
+        </div>
       ) : (
         <div className="flex gap-3">
           <div className="flex flex-col">

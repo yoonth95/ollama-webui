@@ -6,6 +6,8 @@ import SubMenuItem from "./SubMenuItem";
 import DownloadableModels from "./DownloadableModels";
 import CancelModelButton from "./CancelModelButton";
 import DeleteModelButton from "./DeleteModelButton";
+import MobileDropdownMenu from "./MobileDropdownMenu";
+import DesktopDropdownMenu from "./DesktopDropdownMenu";
 
 export {
   ErrorDisplay,
@@ -16,4 +18,6 @@ export {
   DownloadableModels,
   CancelModelButton,
   DeleteModelButton,
+  MobileDropdownMenu,
+  DesktopDropdownMenu,
 };

@@ -10,7 +10,7 @@ const HeaderDropdownMenu = () => {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <SearchBar placeholder="모델 검색" value={inputValue} onChange={handleSearchChange} />
       <div className="my-2 px-3">
         {inputValue ? (
@@ -22,7 +22,7 @@ const HeaderDropdownMenu = () => {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 

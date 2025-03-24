@@ -2,28 +2,34 @@ import { Button } from "@/shared/ui/button";
 import { ModelInfoType } from "@/shared/types/modelType";
 import { CancelModelButton } from "@/widgets/layout/header/ui";
 import { useModelDownloadHandler } from "@/widgets/layout/header/hooks";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
+import { cn } from "@/shared/lib/utils";
 import { ArrowDownToLine, LoaderCircle } from "lucide-react";
 
 const SubMenuItem = ({ model }: { model: ModelInfoType }) => {
+  const isMobile = useIsMobile();
   const { isPending, downloadProgress, handleDownload } = useModelDownloadHandler({ modelName: model.model });
 
   return (
-    <div className="flex items-center justify-between px-1">
+    <div className={cn("flex pl-1 items-center w-full", isPending ? "pr-2" : "pr-3")}>
       <Button
         variant="ghost"
         aria-label="download-model"
         disabled={isPending}
         onClick={handleDownload}
-        className="text-foregroun focus:text-foregroun flex h-[55px] items-center justify-between gap-3"
+        className={cn(
+          "text-foreground focus:text-foreground flex h-16 items-center justify-between w-full",
+          isPending && "w-[calc(100%-2rem)]",
+        )}
       >
-        <div className="flex w-[200px] flex-col items-start">
+        <div className="flex flex-col items-start">
           <span className="font-medium">{model.model}</span>
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs text-muted-foreground">
             Parameters: {model.parameterSize} | size: {model.size}
           </span>
         </div>
         {isPending && downloadProgress?.model_name === model.model ? (
-          <div className="flex items-center gap-3">
+          <div className={cn("flex items-center", isMobile ? "flex-col gap-1" : "gap-3")}>
             <LoaderCircle className="h-4 w-4 animate-spin" />
             <span className="w-10 text-xs font-medium">{downloadProgress?.progress}%</span>
           </div>
@@ -32,9 +38,7 @@ const SubMenuItem = ({ model }: { model: ModelInfoType }) => {
         )}
       </Button>
       {isPending && downloadProgress?.model_name === model.model && (
-        <div className="pr-3">
-          <CancelModelButton model_name={downloadProgress?.model_name} />
-        </div>
+        <CancelModelButton model_name={downloadProgress?.model_name} />
       )}
     </div>
   );

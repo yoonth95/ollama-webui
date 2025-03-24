@@ -1,48 +1,38 @@
-import { useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/shared/ui/dropdown-menu";
-import { CustomScrollbar } from "@/shared/ui/custom-scrollbar";
-import { SubMenuItem } from "@/widgets/layout/header/ui";
-import { GetModelResponseType, ModelInfoType } from "@/shared/types/modelType";
-import modelData from "@/shared/data/modelData.json";
+import { useState, useEffect } from "react";
+import { useWindowSize } from "react-use";
+import { useSidebar } from "@/shared/ui/sidebar";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
+import { useFilteredModels } from "@/widgets/layout/header/hooks";
+import { MobileDropdownMenu, DesktopDropdownMenu } from "@/widgets/layout/header/ui";
 
-type ModelList = {
-  [key: string]: ModelInfoType[];
-};
 const DownloadableModels = () => {
-  const queryClient = useQueryClient();
-  const response = queryClient.getQueryData<GetModelResponseType>(["models"]);
-  const models = response?.data || [];
-  const availableModelNames = models.map((m) => m.model);
+  const { width } = useWindowSize();
+  const [sideOffset, setSideOffset] = useState(0);
+  const { open } = useSidebar();
+  const isMobile = useIsMobile();
+  const filterModels = useFilteredModels();
 
-  // 다운로드 가능한 모델 필터링
-  const filterModels = useMemo((): ModelList => {
-    const filtered: ModelList = {};
-    Object.entries(modelData).forEach(([category, models]) => {
-      const available = models.filter((model) => !availableModelNames.includes(model.model));
-      if (available.length > 0) filtered[category] = available;
-    });
-    return filtered;
-  }, [availableModelNames]);
+  useEffect(() => {
+    if (open) {
+      if (width > 945) setSideOffset(0);
+      else if (width > 845) setSideOffset(-100);
+      else if (width > 768) setSideOffset(-180);
+    } else {
+      setSideOffset(0);
+    }
+  }, [width, open]);
 
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-medium text-muted-foreground">설치 가능한 모델</h4>
       <div className="flex flex-col gap-1">
-        {Object.entries(filterModels).map(([category, models]) => (
-          <DropdownMenuSub key={category}>
-            <DropdownMenuSubTrigger className="px-4 py-2">
-              <span>{category}</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <CustomScrollbar className="max-h-[15rem] overflow-y-auto">
-                {models.map((model) => (
-                  <SubMenuItem key={model.model} model={model} />
-                ))}
-              </CustomScrollbar>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-        ))}
+        {Object.entries(filterModels).map(([category, models]) =>
+          isMobile ? (
+            <MobileDropdownMenu key={category} category={category} models={models} />
+          ) : (
+            <DesktopDropdownMenu key={category} category={category} models={models} sideOffset={sideOffset} />
+          ),
+        )}
       </div>
     </div>
   );
