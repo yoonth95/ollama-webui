@@ -119,4 +119,13 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* 사이드바 */
+  .themed-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .themed-scrollbar {
+    scrollbar-color: var(--color-muted-foreground) var(--color-sidebar);
+  }
 }

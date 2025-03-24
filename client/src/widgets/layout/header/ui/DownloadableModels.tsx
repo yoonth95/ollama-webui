@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from "@/shared/ui/dropdown-menu";
+import { CustomScrollbar } from "@/shared/ui/custom-scrollbar";
 import { SubMenuItem } from "@/widgets/layout/header/ui";
 import { GetModelResponseType, ModelInfoType } from "@/shared/types/modelType";
 import modelData from "@/shared/data/modelData.json";
@@ -33,10 +34,12 @@ const DownloadableModels = () => {
             <DropdownMenuSubTrigger className="px-4 py-2">
               <span>{category}</span>
             </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="text-foreground">
-              {models.map((model) => (
-                <SubMenuItem key={model.model} model={model} />
-              ))}
+            <DropdownMenuSubContent>
+              <CustomScrollbar className="max-h-[15rem] overflow-y-auto">
+                {models.map((model) => (
+                  <SubMenuItem key={model.model} model={model} />
+                ))}
+              </CustomScrollbar>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         ))}
