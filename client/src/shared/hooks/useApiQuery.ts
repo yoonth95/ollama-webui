@@ -19,8 +19,8 @@ export type AxiosResultType<T> = {
  * @param endpoint API 엔드포인트
  * @param schema Zod 검증 스키마 (응답 데이터 검증용)
  * @param errorOptions 에러 (선택 사항)
- * @param config axios 설정 (선택 사항)
  * @param options React Query 옵션 설정 (선택 사항)
+ * @param config axios 설정 (선택 사항)
  * @returns 검증된 데이터와 메타데이터를 포함한 객체
  */
 export function useCustomQuery<T>(

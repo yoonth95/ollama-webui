@@ -18,7 +18,6 @@ const Header = () => {
 
   useEffect(() => {
     if (!isLoading && selectedModel && !models.some((m) => m.model === selectedModel.model)) {
-      console.log(models.some((m) => m.model === selectedModel.model));
       setSelectedModel(null);
     }
   }, [isLoading, models, selectedModel, setSelectedModel]);
