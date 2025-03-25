@@ -1,4 +1,4 @@
-import { useCustomMutation } from "@/shared/hooks/useApiQuery";
+import { useCustomMutation } from "@/shared/api";
 
 export const useDeleteModel = (modelName: string) => {
   return useCustomMutation({

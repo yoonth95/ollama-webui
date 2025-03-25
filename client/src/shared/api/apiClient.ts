@@ -1,11 +1,6 @@
 import { AxiosRequestConfig, AxiosResponse } from "axios";
-import { axiosInstance } from "./axiosClient";
-
-export type ApiResponseType<T> = {
-  ok: boolean;
-  message: string;
-  data: T | null;
-};
+import { axiosInstance } from "@/shared/api";
+import { ApiResponseType } from "@/shared/types/apiType";
 
 export async function customAxios<T>(
   endpoint: string,

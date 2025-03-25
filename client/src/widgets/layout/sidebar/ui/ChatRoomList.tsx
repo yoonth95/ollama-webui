@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from "@/shared/ui/sidebar";
-import { DisplayType } from "@/shared/hooks/useApiError";
 import { ChatRoomItem } from "@/widgets/layout/sidebar/ui";
-import { useGetChatRooms, useGroupedChatRooms } from "@/widgets/layout/sidebar/hooks";
+import { useGetChatRooms } from "@/widgets/layout/sidebar/queries";
+import { useGroupedChatRooms } from "@/widgets/layout/sidebar/hooks";
+import { DisplayType } from "@/shared/types/apiType";
 import { LoaderCircle } from "lucide-react";
 
 const ChatRoomList = () => {

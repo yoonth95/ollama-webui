@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { DisplayType } from "@/shared/types/apiType";
 
 export type ErrorResponse = {
   ok: boolean;
@@ -8,13 +9,6 @@ export type ErrorResponse = {
   data: null;
   status?: number;
 };
-
-export enum DisplayType {
-  Toast = "toast",
-  Modal = "modal",
-  Alert = "alert",
-  Display = "display",
-}
 
 export type ErrorHandlingOptions = {
   type?: DisplayType;

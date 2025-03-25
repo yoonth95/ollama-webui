@@ -1,7 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { Button } from "@/shared/ui/button";
-import { useDeleteModel } from "@/widgets/layout/header/hooks";
+import { useDeleteModel } from "@/widgets/layout/header/queries";
+import { queryKeys } from "@/shared/api";
 import { Trash2 } from "lucide-react";
 
 const DeleteModelButton = ({ model }: { model: string }) => {
@@ -15,7 +16,7 @@ const DeleteModelButton = ({ model }: { model: string }) => {
       onSuccess: (data) => {
         if (data.ok) {
           toast.success(data.message);
-          queryClient.invalidateQueries({ queryKey: ["models"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.models.list() });
         } else {
           toast.error(data.message);
         }

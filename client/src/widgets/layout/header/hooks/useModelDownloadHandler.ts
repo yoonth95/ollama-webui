@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { downloadModel } from "@/widgets/layout/header/apis";
 import { useModelDownload } from "@/widgets/layout/header/hooks";
+import { queryKeys } from "@/shared/api";
 
 interface UseModelDownloadHandlerProps {
   modelName: string;
@@ -26,13 +27,13 @@ export const useModelDownloadHandler = ({ modelName, onSuccess }: UseModelDownlo
 
       if (ok) {
         if (detail !== "cancel") {
-          queryClient.invalidateQueries({ queryKey: ["models"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.models.list() });
           toast.success(message);
           onSuccess?.();
         }
       } else {
         if (detail === "aleady") {
-          queryClient.invalidateQueries({ queryKey: ["models"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.models.list() });
         }
         toast.error(message);
       }

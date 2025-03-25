@@ -1,11 +1,11 @@
-import { useCustomMutation } from "@/shared/hooks/useApiQuery";
+import { queryKeys, useCustomMutation } from "@/shared/api";
 
 const useDeleteChatRoom = () => {
   return useCustomMutation({
     endpoint: (params) => `/room/delete-room/${params?.roomId}`,
     method: "DELETE",
     showToastOnSuccess: true,
-    queryKeyToInvalidate: ["chatRooms"],
+    queryKeyToInvalidate: queryKeys.rooms.list(),
   });
 };
 

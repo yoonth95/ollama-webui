@@ -1,10 +1,9 @@
 import { z } from "zod";
 import { useQuery, useMutation, useInfiniteQuery, InfiniteData, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
-import { customAxios } from "@/shared/lib/apiClient";
-import { ApiRequestBody, ApiResponse } from "@/shared/lib/apiCaseConverter";
-import { useApiError, DisplayType } from "@/shared/hooks/useApiError";
+import { ApiRequestBody, ApiResponse, useApiError, customAxios } from "@/shared/api";
 import {
+  DisplayType,
   AxiosInfiniteResponseType,
   ApiResponseType,
   UseCustomInfiniteQueryType,

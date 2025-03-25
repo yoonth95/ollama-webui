@@ -1,4 +1,4 @@
-import { useCustomMutation } from "@/shared/hooks/useApiQuery";
+import { queryKeys, useCustomMutation } from "@/shared/api";
 import { UpdateChatRoomTitleRequestSchema, UpdateChatRoomTitleRequestType } from "@/shared/types/chatRoomType";
 
 const useUpdateChatRoomTitle = () => {
@@ -7,7 +7,7 @@ const useUpdateChatRoomTitle = () => {
     method: "PATCH",
     requestSchema: UpdateChatRoomTitleRequestSchema,
     showToastOnSuccess: true,
-    queryKeyToInvalidate: ["chatRooms"],
+    queryKeyToInvalidate: queryKeys.rooms.list(),
   });
 };
 

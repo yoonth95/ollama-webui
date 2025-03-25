@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { GetModelResponseType, ModelInfoType } from "@/shared/types/modelType";
+import { queryKeys } from "@/shared/api";
 import modelData from "@/shared/data/modelData.json";
 
 type ModelList = {
@@ -9,7 +10,7 @@ type ModelList = {
 
 export const useFilteredModels = () => {
   const queryClient = useQueryClient();
-  const response = queryClient.getQueryData<GetModelResponseType>(["models"]);
+  const response = queryClient.getQueryData<GetModelResponseType>(queryKeys.models.list());
   const models = response?.data || [];
   const availableModelNames = models.map((m) => m.model);
 

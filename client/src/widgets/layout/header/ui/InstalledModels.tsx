@@ -4,13 +4,14 @@ import { CustomScrollbar } from "@/shared/ui/custom-scrollbar";
 import { DeleteModelButton } from "@/widgets/layout/header/ui";
 import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
 import { GetModelResponseType } from "@/shared/types/modelType";
+import { queryKeys } from "@/shared/api";
 import { Check } from "lucide-react";
 
 const InstalledModels = () => {
   const { selectedModel, setSelectedModel } = useModelSelectStore();
   const queryClient = useQueryClient();
 
-  const response = queryClient.getQueryData<GetModelResponseType>(["models"]);
+  const response = queryClient.getQueryData<GetModelResponseType>(queryKeys.models.list());
   const models = response?.data || [];
 
   const handleModelChange = (modelName: string) => {

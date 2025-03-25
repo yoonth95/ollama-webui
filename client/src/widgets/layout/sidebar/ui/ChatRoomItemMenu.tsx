@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DropdownMenuItem, DropdownMenuContent } from "@/shared/ui/dropdown-menu";
 import { Separator } from "@/shared/ui/separator";
-import { useDeleteChatRoom, useUpdateChatRoomTitle } from "@/widgets/layout/sidebar/hooks";
+import { useDeleteChatRoom, useUpdateChatRoomTitle } from "@/widgets/layout/sidebar/queries";
 import { ConfirmDialog, EditDialog } from "@/shared/components";
 import { Pencil, Trash2 } from "lucide-react";
 

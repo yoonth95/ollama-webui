@@ -1,8 +1,15 @@
 import { AxiosRequestConfig } from "axios";
 import { InfiniteData, UseInfiniteQueryOptions, UseMutationOptions, UseQueryOptions } from "@tanstack/react-query";
 import { z } from "zod";
-import { ErrorHandlingOptions } from "@/shared/hooks/useApiError";
+import { ErrorHandlingOptions } from "@/shared/api/useApiError";
 import { ApiError } from "@/shared/types/apiErrorType";
+
+export enum DisplayType {
+  Toast = "toast",
+  Modal = "modal",
+  Alert = "alert",
+  Display = "display",
+}
 
 // Axios Response 타입
 export type ApiResponseType<T = null> = {

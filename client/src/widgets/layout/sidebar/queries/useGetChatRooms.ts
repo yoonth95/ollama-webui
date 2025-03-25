@@ -1,10 +1,10 @@
-import { DisplayType } from "@/shared/hooks/useApiError";
-import { useCustomInfiniteQuery } from "@/shared/hooks/useApiQuery";
+import { queryKeys, useCustomInfiniteQuery } from "@/shared/api";
 import { ChatRoomSchema, ChatRoomType } from "@/shared/types/chatRoomType";
+import { DisplayType } from "@/shared/types/apiType";
 
 const useGetChatRooms = (type: DisplayType) => {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomInfiniteQuery<ChatRoomType>({
-    queryKey: ["chatRooms"],
+    queryKey: queryKeys.rooms.list(),
     endpoint: "/room/get-rooms",
     schema: ChatRoomSchema,
     errorOptions: { type },

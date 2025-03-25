@@ -1,8 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
-import { useCustomQuery } from "@/shared/hooks/useApiQuery";
-import { DisplayType } from "@/shared/hooks/useApiError";
+import { useCustomQuery, queryKeys } from "@/shared/api";
 import { ModelInfoArraySchema, ModelInfoType } from "@/shared/types/modelType";
+import { DisplayType } from "@/shared/types/apiType";
 
 type DisplayErrorType =
   | {
@@ -15,7 +15,7 @@ export const useGetModels = (type: DisplayType) => {
   const [displayError, setDisplayError] = useState<DisplayErrorType>();
 
   const { data: modelsResponse, isLoading } = useCustomQuery<ModelInfoType[]>({
-    queryKey: ["models"],
+    queryKey: queryKeys.models.list(),
     endpoint: `/model/get-models`,
     schema: ModelInfoArraySchema,
     errorOptions: {
