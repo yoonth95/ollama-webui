@@ -6,15 +6,9 @@ import { ChatRoomItemMenu } from "@/widgets/layout/sidebar/ui";
 import { cn } from "@/shared/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 
-interface ChatRoomType {
-  id: string;
-  title: string;
-}
-
 interface ChatRoomItemPropsType {
-  chat: ChatRoomType;
+  chat: { id: string; title: string };
 }
-
 const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
   const { pathname } = useLocation();
   const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
@@ -29,16 +23,16 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
       key={chat.id}
       className={cn(
         `group/menu-item relative flex w-full justify-between rounded-md transition-colors ${
-          isActive ? "bg-neutral-700/50" : ""
+          isActive ? "bg-accent" : ""
         }`,
-        "dark:hover:bg-neutral-700/50",
+        "dark:hover:bg-accent",
       )}
       onMouseEnter={() => setHoveredRoom(chat.id)}
       onMouseLeave={() => {
         if (!openedRoom) setHoveredRoom(null);
       }}
     >
-      <Link to={chat.id} className={cn(`block flex-1 cursor-pointer truncate rounded-md p-2 text-sm`)}>
+      <Link to={"/chat/" + chat.id} className={cn(`block flex-1 cursor-pointer truncate rounded-md p-2 text-sm`)}>
         {roomTitle}
       </Link>
 
@@ -57,7 +51,7 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
             variant="ghost"
             aria-label="sub-menu-button"
             className={cn(
-              `absolute right-2 top-1/2 -translate-y-1/2 transform p-2 opacity-0 transition-opacity group-hover/menu-item:opacity-100 dark:ring-offset-transparent dark:hover:bg-transparent dark:focus-visible:ring-0 dark:focus-visible:ring-transparent ${
+              `absolute right-2 top-1/2 -translate-y-1/2 transform p-2 opacity-0 transition-opacity group-hover/menu-item:opacity-100 dark:hover:bg-transparent ${
                 isActive ? "opacity-100" : ""
               }`,
             )}

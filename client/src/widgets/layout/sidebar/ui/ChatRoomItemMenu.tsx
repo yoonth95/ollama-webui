@@ -1,73 +1,68 @@
 import { Dispatch, SetStateAction, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "react-toastify";
 import { DropdownMenuItem, DropdownMenuContent } from "@/shared/ui/dropdown-menu";
-import { deleteChatRoom, updateChatRoomTitle } from "@/widgets/layout/sidebar/apis";
+import { Separator } from "@/shared/ui/separator";
+import { useDeleteChatRoom, useUpdateChatRoomTitle } from "@/widgets/layout/sidebar/hooks";
 import { ConfirmDialog, EditDialog } from "@/shared/components";
 import { Pencil, Trash2 } from "lucide-react";
 
-interface ChatRoomItemMenuProps {
+interface ChatRoomItemMenuPropsType {
   roomId: string;
   roomTitle: string;
   setRoomTitle: Dispatch<SetStateAction<string>>;
   setHoveredRoom: Dispatch<SetStateAction<string | null>>;
 }
-
-const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: ChatRoomItemMenuProps) => {
+const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: ChatRoomItemMenuPropsType) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const queryClient = useQueryClient();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+
+  const updateChatRoomTitleMutation = useUpdateChatRoomTitle();
+  const deleteChatRoomMutation = useDeleteChatRoom();
 
   const isNowChatRoom = pathname === "/chat/" + roomId;
   const alertMessage = isNowChatRoom ? "현재 채팅방이 삭제되고 메인페이지로 이동합니다." : "해당 채팅방이 삭제됩니다.";
 
   // 채팅방 삭제
-  const handleDelete = async () => {
-    const { ok, message } = await deleteChatRoom(roomId);
-    if (ok) {
-      toast.success(message);
-      queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
-      if (isNowChatRoom) navigate("/");
-    } else {
-      toast.error(message);
-    }
-    return;
+  const handleDelete = () => {
+    deleteChatRoomMutation.mutate(
+      { params: { roomId } },
+      {
+        onSuccess: () => {
+          if (isNowChatRoom) navigate("/");
+        },
+      },
+    );
   };
 
   // 채팅방 이름 변경
-  const handleRename = async (newTitle: string) => {
+  const handleRename = (newTitle: string) => {
     const oldTitle = roomTitle;
-
     setRoomTitle(newTitle);
-    const { ok, message } = await updateChatRoomTitle(roomId, newTitle);
-    if (ok) {
-      toast.success(message);
-      queryClient.invalidateQueries({ queryKey: ["chatRooms"] });
-    } else {
-      setRoomTitle(oldTitle);
-      toast.error(message);
-    }
+
+    updateChatRoomTitleMutation.mutate({ roomId, newTitle }, { onError: () => setRoomTitle(oldTitle) });
     setHoveredRoom(null);
   };
 
   return (
     <>
       <DropdownMenuContent
-        className="mt-[-5px] min-w-[10rem] space-y-2 border border-border bg-accent px-2 py-3"
+        className="mt-[-5px] min-w-[8rem] space-y-2 border border-border bg-background px-2 py-2"
         align="start"
+        sideOffset={-5}
+        alignOffset={10}
       >
         <DropdownMenuItem
-          className="flex cursor-pointer items-center gap-3 rounded-md p-3 text-sm dark:hover:bg-neutral-700/60"
+          className="flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm dark:hover:bg-accent"
           onClick={() => setShowEditDialog(true)}
         >
           <Pencil />
           <span>이름 변경</span>
         </DropdownMenuItem>
+        <Separator />
         <DropdownMenuItem
-          className="flex cursor-pointer items-center gap-3 rounded-md p-3 text-sm text-red-400 hover:text-red-400 dark:hover:bg-neutral-700/60"
+          className="flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm text-red-400 hover:text-red-400 dark:hover:bg-accent"
           onClick={() => setShowConfirmDialog(true)}
         >
           <Trash2 />

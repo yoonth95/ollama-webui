@@ -13,5 +13,11 @@ export const CreateChatRoomRequestSchema = z.object({
 
 export const ChatRoomArraySchema = z.array(ChatRoomSchema);
 
+export const UpdateChatRoomTitleRequestSchema = z.object({
+  roomId: z.string(),
+  newTitle: z.string(),
+});
+
 export type ChatRoomType = z.infer<typeof ChatRoomSchema>;
 export type CreateChatRoomRequestType = z.infer<typeof CreateChatRoomRequestSchema>;
+export type UpdateChatRoomTitleRequestType = z.infer<typeof UpdateChatRoomTitleRequestSchema>;

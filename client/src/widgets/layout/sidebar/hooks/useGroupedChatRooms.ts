@@ -11,7 +11,7 @@ const useGroupedChatRooms = (chatRooms: ChatRoomType[]) => {
     const sevenDaysAgo = subDays(new Date(), 7);
 
     chatRooms.forEach((chat) => {
-      const chatDate = parseISO(chat.created_at);
+      const chatDate = parseISO(chat.createdAt);
       if (isToday(chatDate)) today.push(chat);
       else if (isYesterday(chatDate)) yesterday.push(chat);
       else if (isAfter(chatDate, sevenDaysAgo)) lastWeek.push(chat);
@@ -28,7 +28,7 @@ const useGroupedChatRooms = (chatRooms: ChatRoomType[]) => {
         title: group.title,
         items: group.items.map((chat) => ({
           title: chat.title,
-          id: `/chat/${chat.id}`,
+          id: `${chat.id}`,
         })),
       }))
       .filter((group) => group.items.length > 0); // 빈 그룹 제거

@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from "@/shared/ui/sidebar";
+import { DisplayType } from "@/shared/hooks/useApiError";
 import { ChatRoomItem } from "@/widgets/layout/sidebar/ui";
 import { useGetChatRooms, useGroupedChatRooms } from "@/widgets/layout/sidebar/hooks";
 import { LoaderCircle } from "lucide-react";
 
 const ChatRoomList = () => {
   const { ref, inView } = useInView();
-  const { data: chatRooms, fetchNextPage, hasNextPage, isFetchingNextPage } = useGetChatRooms();
+  const { data: chatRooms, fetchNextPage, hasNextPage, isFetchingNextPage } = useGetChatRooms(DisplayType.Toast);
   const groupedChats = useGroupedChatRooms(chatRooms);
 
   useEffect(() => {
