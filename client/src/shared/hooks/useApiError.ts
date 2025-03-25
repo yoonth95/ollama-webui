@@ -21,7 +21,7 @@ export type ErrorHandlingOptions = {
   customErrorHandler?: (error: unknown, errorMessage: string, statusCode: number) => void;
 };
 
-const useApiError = () => {
+export const useApiError = () => {
   const processError = useCallback((error: unknown) => {
     let errorMessage = "네트워크 연결 오류 또는 기타 오류가 발생했습니다.";
     let statusCode = 500;
@@ -72,5 +72,3 @@ const useApiError = () => {
 
   return { handleErrorWithOptions };
 };
-
-export default useApiError;

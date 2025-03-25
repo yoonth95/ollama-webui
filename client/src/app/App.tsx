@@ -3,7 +3,7 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@ta
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { CookiesProvider } from "react-cookie";
 import { ThemeProvider, ToastProvider } from "@/app/providers";
-import useApiError from "@/shared/hooks/useApiError";
+import { useApiError } from "@/shared/hooks/useApiError";
 import { ApiError } from "@/shared/types/apiErrorType";
 import { routes } from "./routes";
 
