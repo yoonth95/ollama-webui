@@ -1,20 +1,17 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { getChatRooms } from "@/widgets/layout/sidebar/apis";
+import { DisplayType } from "@/shared/hooks/useApiError";
+import { useCustomInfiniteQuery } from "@/shared/hooks/useApiQuery";
+import { ChatRoomSchema, ChatRoomType } from "@/shared/types/chatRoomType";
 
-const useGetChatRooms = () => {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+const useGetChatRooms = (type: DisplayType) => {
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomInfiniteQuery<ChatRoomType>({
     queryKey: ["chatRooms"],
-    queryFn: async ({ pageParam = 1 }) => {
-      const response = await getChatRooms({ page: pageParam, limit: 20 });
-      return response;
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage && lastPage.length === 20 ? allPages.length + 1 : undefined;
-    },
+    endpoint: "/room/get-rooms",
+    schema: ChatRoomSchema,
+    errorOptions: { type },
+    options: { refetchOnWindowFocus: true },
   });
 
-  const flatData = data?.pages.flatMap((page) => (Array.isArray(page) ? page : []));
+  const flatData = data?.pages.flatMap((page) => page.data?.items || []) || [];
 
   return {
     data: flatData || [],

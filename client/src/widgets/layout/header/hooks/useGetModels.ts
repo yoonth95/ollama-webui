@@ -14,11 +14,11 @@ type DisplayErrorType =
 export const useGetModels = (type: DisplayType) => {
   const [displayError, setDisplayError] = useState<DisplayErrorType>();
 
-  const { data: modelsResponse, isLoading } = useCustomQuery<ModelInfoType[]>(
-    ["models"],
-    `/model/get-models`,
-    ModelInfoArraySchema,
-    {
+  const { data: modelsResponse, isLoading } = useCustomQuery<ModelInfoType[]>({
+    queryKey: ["models"],
+    endpoint: `/model/get-models`,
+    schema: ModelInfoArraySchema,
+    errorOptions: {
       type,
       customErrorHandler: (error, errorMessage, statusCode) => {
         if (type === "display" && axios.isAxiosError(error)) {
@@ -29,8 +29,8 @@ export const useGetModels = (type: DisplayType) => {
         }
       },
     },
-    { refetchOnWindowFocus: true },
-  );
+    options: { refetchOnWindowFocus: true },
+  });
 
   return { models: modelsResponse?.data || [], isLoading, displayError };
 };
