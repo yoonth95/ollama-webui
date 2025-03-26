@@ -7,7 +7,7 @@ import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
 import { cn } from "@/shared/lib/utils";
 import { useGetModels } from "@/widgets/layout/header/queries";
-import { ErrorDisplay, HeaderDropdownMenu } from "@/widgets/layout/header/ui";
+import { ErrorDisplay, HeaderDropdownMenu } from "@/widgets/layout/header/components";
 import { DisplayType } from "@/shared/types/apiType";
 import { ChevronDown, LoaderCircle } from "lucide-react";
 

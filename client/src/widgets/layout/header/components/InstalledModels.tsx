@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenuItem } from "@/shared/ui/dropdown-menu";
 import { CustomScrollbar } from "@/shared/ui/custom-scrollbar";
-import { DeleteModelButton } from "@/widgets/layout/header/ui";
+import { DeleteModelButton } from "@/widgets/layout/header/components";
 import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
 import { GetModelResponseType } from "@/shared/types/modelType";
 import { queryKeys } from "@/shared/api";

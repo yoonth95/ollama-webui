@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { SearchBar } from "@/shared/components";
-import { AddModelButton, InstalledModels, DownloadableModels } from "@/widgets/layout/header/ui";
+import { AddModelButton, InstalledModels, DownloadableModels } from "@/widgets/layout/header/components";
 
 const HeaderDropdownMenu = () => {
   const [inputValue, setInputValue] = useState("");

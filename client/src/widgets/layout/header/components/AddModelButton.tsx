@@ -1,5 +1,5 @@
 import { Button } from "@/shared/ui/button";
-import { CancelModelButton } from "@/widgets/layout/header/ui";
+import { CancelModelButton } from "@/widgets/layout/header/components";
 import { useModelDownloadHandler } from "@/widgets/layout/header/hooks";
 import { LoaderCircle } from "lucide-react";
 

@@ -1,7 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
 import { CustomScrollbar } from "@/shared/ui/custom-scrollbar";
-import { SubMenuItem } from "@/widgets/layout/header/ui";
+import { SubMenuItem } from "@/widgets/layout/header/components";
 import { ModelInfoType } from "@/shared/types/modelType";
 
 type MobileDropdownMenuProps = {

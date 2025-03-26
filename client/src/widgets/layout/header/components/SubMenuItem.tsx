@@ -1,6 +1,6 @@
 import { Button } from "@/shared/ui/button";
 import { ModelInfoType } from "@/shared/types/modelType";
-import { CancelModelButton } from "@/widgets/layout/header/ui";
+import { CancelModelButton } from "@/widgets/layout/header/components";
 import { useModelDownloadHandler } from "@/widgets/layout/header/hooks";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { cn } from "@/shared/lib/utils";

@@ -3,7 +3,7 @@ import { useWindowSize } from "react-use";
 import { useSidebar } from "@/shared/ui/sidebar";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useFilteredModels } from "@/widgets/layout/header/hooks";
-import { MobileDropdownMenu, DesktopDropdownMenu } from "@/widgets/layout/header/ui";
+import { MobileDropdownMenu, DesktopDropdownMenu } from "@/widgets/layout/header/components";
 
 const DownloadableModels = () => {
   const { width } = useWindowSize();
