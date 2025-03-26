@@ -14,7 +14,7 @@ export default function DefaultLayout() {
         <AppSidebar />
         <div className="flex flex-1 flex-col">
           <Header />
-          <main className="flex flex-1 flex-col items-center justify-center overflow-hidden">
+          <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
             <Outlet />
           </main>
         </div>
