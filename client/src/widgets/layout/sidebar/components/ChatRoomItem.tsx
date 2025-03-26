@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { DropdownMenu, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
-import { ChatRoomItemMenu } from "@/widgets/layout/sidebar/ui";
+import { ChatRoomItemMenu } from "@/widgets/layout/sidebar/components";
 import { cn } from "@/shared/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 

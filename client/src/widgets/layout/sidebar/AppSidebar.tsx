@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from "@/shared/ui/sidebar";
-import { ChatRoomList } from "@/widgets/layout/sidebar/ui";
+import { ChatRoomList } from "@/widgets/layout/sidebar/components";
 import { SidebarActionButton } from "@/shared/components";
 
 const AppSidebar = () => {
