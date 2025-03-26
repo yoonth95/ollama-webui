@@ -37,10 +37,12 @@ export const useApiError = () => {
 
   const showError = useCallback((type: string, message: string, statusCode: number) => {
     switch (type) {
-      case "toast":
+      case DisplayType.Toast:
         toast.error(message);
         break;
-      // modal, alert 등 추가
+      case DisplayType.Modal:
+        // 모달 로직 추가
+        break;
       default:
         console.error(`Error: ${message} (Status: ${statusCode})`);
     }

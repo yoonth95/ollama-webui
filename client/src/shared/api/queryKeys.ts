@@ -1,9 +1,14 @@
+const QUERY_KEY_CONSTANTS = {
+  MODELS: "models",
+  ROOMS: "chatRooms",
+} as const;
+
 export const queryKeys = {
   models: {
-    list: () => ["models"], // 모델 목록
+    list: () => [QUERY_KEY_CONSTANTS.MODELS], // 모델 목록
   },
   rooms: {
-    list: () => ["chatRooms"], // 채팅방 목록
-    detail: (roomId: string) => ["chatRooms", roomId], // 특정 채팅방
+    list: () => [QUERY_KEY_CONSTANTS.ROOMS], // 채팅방 목록
+    detail: (roomId: string) => [QUERY_KEY_CONSTANTS.ROOMS, roomId], // 특정 채팅방
   },
 };
