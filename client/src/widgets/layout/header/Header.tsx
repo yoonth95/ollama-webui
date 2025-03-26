@@ -31,8 +31,10 @@ const Header = () => {
           <div className={cn("flex-1 flex items-center", isMobile && "justify-center")}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" aria-label="dropdown" className="p-0 text-lg">
-                <span className="font-medium">{selectedModel ? selectedModel.model : "모델 선택"}</span>
-                <ChevronDown />
+                <span className="font-bold text-accent-foreground/70">
+                  {selectedModel ? selectedModel.model : "모델 선택"}
+                </span>
+                <ChevronDown className="text-accent-foreground/70" />
               </Button>
             </DropdownMenuTrigger>
           </div>
