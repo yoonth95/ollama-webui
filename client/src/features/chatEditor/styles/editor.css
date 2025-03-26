@@ -1,0 +1,213 @@
+.tiptap {
+  position: relative;
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  scrollbar-color: var(--color-muted-foreground) var(--sidebar);
+
+  :first-child {
+    margin-top: 0;
+  }
+
+  p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    pointer-events: none;
+    float: left;
+    height: 0;
+    color: var(--muted-foreground);
+  }
+
+  /* List styles */
+  ol,
+  ul {
+    margin: 20px 0;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  ol {
+    list-style-type: decimal;
+  }
+
+  ul {
+    list-style-type: disc;
+  }
+
+  li p {
+    margin-top: 4px;
+    margin-bottom: 4px;
+  }
+
+  /* Heading styles */
+  h1,
+  h2 {
+    margin-top: 56px;
+    margin-bottom: 24px;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 40px;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: 1rem;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.2;
+    font-weight: bold;
+    text-wrap: pretty;
+  }
+
+  /* Code and preformatted text styles */
+  code {
+    background-color: var(--inline-code-bg);
+    padding: 0.25em 0.5em;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    color: var(--inline-code);
+  }
+
+  pre {
+    margin: 24px 0;
+    background-color: var(--code-block-bg);
+    padding: 8px 12px;
+    font-family: "JetBrainsMono", monospace;
+    font-size: var(--text-foreground);
+    border-radius: 8px;
+
+    code {
+      background-color: transparent;
+      padding: 0;
+      font-size: 0.8rem;
+      color: inherit;
+    }
+
+    /* Code styling */
+    .hljs {
+      display: block;
+      overflow-x: auto;
+      padding: 0.5em;
+      color: #abb2bf;
+      background: #282c34;
+    }
+
+    .hljs-comment,
+    .hljs-quote {
+      color: #5c6370;
+      font-style: italic;
+    }
+
+    .hljs-doctag,
+    .hljs-formula,
+    .hljs-keyword {
+      color: #c678dd;
+    }
+
+    .hljs-deletion,
+    .hljs-name,
+    .hljs-section,
+    .hljs-selector-tag,
+    .hljs-subst {
+      color: #e06c75;
+    }
+
+    .hljs-literal {
+      color: #56b6c2;
+    }
+
+    .hljs-addition,
+    .hljs-attribute,
+    .hljs-meta-string,
+    .hljs-regexp,
+    .hljs-string {
+      color: #98c379;
+    }
+
+    .hljs-built_in,
+    .hljs-class .hljs-title {
+      color: #e6c07b;
+    }
+
+    .hljs-attr,
+    .hljs-number,
+    .hljs-selector-attr,
+    .hljs-selector-class,
+    .hljs-selector-pseudo,
+    .hljs-template-variable,
+    .hljs-type,
+    .hljs-variable {
+      color: #d19a66;
+    }
+
+    .hljs-bullet,
+    .hljs-link,
+    .hljs-meta,
+    .hljs-selector-id,
+    .hljs-symbol,
+    .hljs-title {
+      color: #61aeee;
+    }
+
+    .hljs-emphasis {
+      font-style: italic;
+    }
+
+    .hljs-strong {
+      font-weight: 700;
+    }
+
+    .hljs-link {
+      text-decoration: underline;
+    }
+
+    /* Mark styles */
+    mark {
+      background-color: #faf594;
+      padding: 0.1rem 0.25rem;
+      border-radius: 4px;
+    }
+
+    /* Blockquote styles */
+    blockquote {
+      margin: 24px 0;
+      padding-left: 16px;
+      border-left: 4px solid rgba(61, 37, 20, 0.12);
+    }
+
+    /* HR styles */
+    hr {
+      margin: 32px 0;
+      border: 0;
+      border-top: 1px solid var(--hr);
+    }
+
+    hr.ProseMirror-selectednode {
+      border-color: var(--hr-select);
+    }
+  }
+}
