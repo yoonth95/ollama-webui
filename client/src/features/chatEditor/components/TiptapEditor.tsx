@@ -1,19 +1,22 @@
 import { RefObject, useImperativeHandle } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-// import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Typography from "@tiptap/extension-typography";
 import Placeholder from "@tiptap/extension-placeholder";
 import Highlight from "@tiptap/extension-highlight";
 import HorizontalRule from "@tiptap/extension-horizontal-rule";
 import { Markdown } from "tiptap-markdown";
-// import { all, createLowlight } from "lowlight";
-// import { CodeBlockComponent } from "@/features/chatEditor/components";
-import { ShiftEnterExtension, CodeBlockEnhancementExtension } from "@/features/chatEditor/utils/tiptapExtensionUtil";
+import { common, createLowlight } from "lowlight";
+import { CodeBlockComponent } from "@/features/chatEditor/components";
+import {
+  ShiftEnterExtension,
+  CodeBlockEnhancementExtension,
+  HorizontalRuleEnhancementExtension,
+} from "@/features/chatEditor/utils/tiptapExtensionUtil";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
-// import CodeBlockHighlightJS from "./CodeBlockHighlightJS"; // 새로 만든 확장 import
 
-// const lowlight = createLowlight(all);
+const lowlight = createLowlight(common); // common은 highlight.js의 일반적인 언어 세트와 더 비슷한 구문 강조 규칙을 제공
 
 interface TiptapEditorProps {
   placeholder?: string;
@@ -27,16 +30,16 @@ const TiptapEditor = ({ placeholder = "메시지를 입력하세요.", onSubmit,
         codeBlock: false,
         horizontalRule: false,
       }),
-      // CodeBlockLowlight.extend({
-      //   addNodeView() {
-      //     return ReactNodeViewRenderer(CodeBlockComponent);
-      //   },
-      // }).configure({ lowlight, defaultLanguage: "auto" }),
-      // CodeBlockHighlightJS,
+      CodeBlockLowlight.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(CodeBlockComponent);
+        },
+      }).configure({ lowlight, defaultLanguage: null }),
       Highlight,
       Typography,
       Markdown,
       HorizontalRule,
+      HorizontalRuleEnhancementExtension,
       ShiftEnterExtension,
       CodeBlockEnhancementExtension,
       Placeholder.configure({
