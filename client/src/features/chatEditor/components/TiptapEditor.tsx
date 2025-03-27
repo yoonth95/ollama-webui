@@ -18,12 +18,18 @@ import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 
 const lowlight = createLowlight(common); // common은 highlight.js의 일반적인 언어 세트와 더 비슷한 구문 강조 규칙을 제공
 
-interface TiptapEditorProps {
-  placeholder?: string;
-  onSubmit?: (markdown: string) => void;
+interface TiptapEditorPropsType {
   editorRef?: RefObject<TiptapEditorRef | null>;
+  placeholder?: string;
+  onChange?: (content: string) => void;
+  onSubmit: () => void;
 }
-const TiptapEditor = ({ placeholder = "메시지를 입력하세요.", onSubmit, editorRef }: TiptapEditorProps) => {
+const TiptapEditor = ({
+  placeholder = "메시지를 입력하세요.",
+  onChange,
+  editorRef,
+  onSubmit,
+}: TiptapEditorPropsType) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -53,6 +59,9 @@ const TiptapEditor = ({ placeholder = "메시지를 입력하세요.", onSubmit,
       }),
     ],
     content: "",
+    onUpdate: ({ editor }) => {
+      onChange?.(editor.storage.markdown.getMarkdown());
+    },
     editorProps: {
       attributes: {
         class: "focus:outline-none w-full px-4 py-3 max-h-84 overflow-y-auto",
@@ -62,9 +71,7 @@ const TiptapEditor = ({ placeholder = "메시지를 입력하세요.", onSubmit,
           // Enter키 방지 및 마크다운 텍스트 가져오기
           if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            const content = editor?.storage.markdown.getMarkdown();
-
-            onSubmit?.(content);
+            onSubmit();
             return true;
           }
           return false;

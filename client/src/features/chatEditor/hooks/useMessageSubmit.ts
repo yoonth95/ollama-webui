@@ -1,0 +1,36 @@
+import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
+import useCreateChatRoom from "@/features/chatEditor/queries/useCreateChatRoom";
+
+export const useMessageSubmit = (
+  editorRef: React.RefObject<TiptapEditorRef | null> | undefined,
+  chatRoomId: string,
+) => {
+  const navigate = useNavigate();
+  const selectedModel = useModelSelectStore((state) => state.selectedModel);
+  const { mutate: createChatRoom, isPending } = useCreateChatRoom();
+
+  const handleSubmit = () => {
+    if (isPending) return;
+
+    if (!selectedModel) {
+      toast.error("모델을 선택해주세요.");
+      return;
+    }
+    const content = editorRef?.current?.getText();
+    if (!content) return;
+
+    const body = { model: selectedModel.model, message: content };
+    if (chatRoomId === "") {
+      createChatRoom(body, {
+        onSuccess: (data) => navigate(`/chat/${data.data?.id}`),
+      });
+    } else {
+      console.log("채팅방에서 메시지 입력");
+    }
+  };
+
+  return { handleSubmit, isPending };
+};
