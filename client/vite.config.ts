@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  cacheDir: "./vite_cache",
   plugins: [react(), tailwindcss()],
   server: {
     port: 3000,
