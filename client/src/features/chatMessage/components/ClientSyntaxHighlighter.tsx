@@ -6,7 +6,6 @@ interface ClientSyntaxHighlighterPropsType {
   codeContent: string;
   className?: string;
 }
-
 const ClientSyntaxHighlighter = ({ language, codeContent, className }: ClientSyntaxHighlighterPropsType) => {
   return (
     <SyntaxHighlighter language={language} PreTag="div" style={vscDarkPlus} className={`!my-0 ${className}`}>

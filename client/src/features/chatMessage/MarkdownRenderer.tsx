@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import ReactMarkdown from "react-markdown";
-import { ClientSyntaxHighlighter, CodeBlockToolBar } from "@/features/chatEditor/components";
+import { ClientSyntaxHighlighter, CodeBlockToolBar } from "@/features/chatMessage/components";
 
 interface MarkdownRendererPropsType {
   content: string;
   type: "User" | "Bot";
 }
-
 const MarkdownRenderer = ({ content, type }: MarkdownRendererPropsType) => {
   const chatType = type === "User" ? "user-message" : "bot-message";
 
