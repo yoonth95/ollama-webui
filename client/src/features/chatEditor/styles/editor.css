@@ -7,10 +7,11 @@
   }
   scrollbar-color: var(--color-muted-foreground) var(--sidebar);
 
-  :first-child {
+  > p:first-child {
     margin-top: 0;
   }
 
+  /* Placeholder styles */
   p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     pointer-events: none;
@@ -81,6 +82,31 @@
     line-height: 1.2;
     font-weight: bold;
     text-wrap: pretty;
+  }
+
+  /* Mark styles */
+  mark {
+    background-color: #faf594;
+    padding: 0.1rem 0.25rem;
+    border-radius: 4px;
+  }
+
+  /* Blockquote styles */
+  blockquote {
+    margin: 24px 0;
+    padding-left: 16px;
+    border-left: 4px solid rgba(61, 37, 20, 0.12);
+  }
+
+  /* HR styles */
+  hr {
+    margin: 32px 0;
+    border: 0;
+    border-top: 1px solid var(--hr);
+  }
+
+  hr.ProseMirror-selectednode {
+    border-color: var(--hr-select);
   }
 
   /* Code and preformatted text styles */
@@ -183,31 +209,6 @@
 
     .hljs-link {
       text-decoration: underline;
-    }
-
-    /* Mark styles */
-    mark {
-      background-color: #faf594;
-      padding: 0.1rem 0.25rem;
-      border-radius: 4px;
-    }
-
-    /* Blockquote styles */
-    blockquote {
-      margin: 24px 0;
-      padding-left: 16px;
-      border-left: 4px solid rgba(61, 37, 20, 0.12);
-    }
-
-    /* HR styles */
-    hr {
-      margin: 32px 0;
-      border: 0;
-      border-top: 1px solid var(--hr);
-    }
-
-    hr.ProseMirror-selectednode {
-      border-color: var(--hr-select);
     }
   }
 }
