@@ -1,8 +1,6 @@
-import ChatInputContainer from "../ChatInputContainer";
 import CodeBlockComponent from "./CodeBlockComponent";
 import TiptapEditor from "./TiptapEditor";
-import ChatEditor from "./ChatEditor";
 import ChatSendButton from "./ChatSendButton";
-import ChatInputWrapper from "./ChatInputWrapper";
+import ChatEditorWrapper from "./ChatEditorWrapper";
 
-export { ChatInputContainer, CodeBlockComponent, TiptapEditor, ChatEditor, ChatSendButton, ChatInputWrapper };
+export { CodeBlockComponent, TiptapEditor, ChatSendButton, ChatEditorWrapper };

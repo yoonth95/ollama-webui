@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import remarkGfm from "remark-gfm";
 import { ClientSyntaxHighlighter, CodeBlockToolBar } from "@/features/chatMessage/components";
+import "katex/dist/katex.min.css";
 
 interface MarkdownRendererPropsType {
   content: string;
@@ -10,8 +14,10 @@ const MarkdownRenderer = ({ content, type }: MarkdownRendererPropsType) => {
   const chatType = type === "User" ? "user-message" : "bot-message";
 
   return (
-    <div className={chatType}>
+    <div className={`markdown-body ${chatType}`}>
       <ReactMarkdown
+        remarkPlugins={[remarkMath, remarkGfm]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           pre({ node, children, ...props }) {
             let codeContent = "";
@@ -31,7 +37,7 @@ const MarkdownRenderer = ({ content, type }: MarkdownRendererPropsType) => {
             });
 
             return (
-              <div className="code-block-wrapper">
+              <div className="code-block-wrapper overflow-visible">
                 <CodeBlockToolBar language={language} codeContent={codeContent} />
                 <pre {...props}>{children}</pre>
               </div>
