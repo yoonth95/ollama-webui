@@ -1,5 +1,5 @@
 import { ModelText } from "@/features/home/components";
-import { ChatInputContainer } from "@/features/chatEditor/components";
+import EditorContainer from "@/features/chatEditor/EditorContainer";
 
 export default function HomePage() {
   return (
@@ -7,7 +7,7 @@ export default function HomePage() {
       <section className="mb-6">
         <ModelText />
       </section>
-      <ChatInputContainer />
+      <EditorContainer />
     </div>
   );
 }

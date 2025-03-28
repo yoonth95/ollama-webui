@@ -1,19 +1,20 @@
 import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 import useCreateChatRoom from "@/features/chatEditor/queries/useCreateChatRoom";
 
-export const useMessageSubmit = (
-  editorRef: React.RefObject<TiptapEditorRef | null> | undefined,
-  chatRoomId: string,
-) => {
+export const useMessageSubmit = (editorRef: React.RefObject<TiptapEditorRef | null> | undefined) => {
   const navigate = useNavigate();
+  const { chatRoomId } = useParams<{ chatRoomId?: string }>();
+
   const selectedModel = useModelSelectStore((state) => state.selectedModel);
-  const { mutate: createChatRoom, isPending } = useCreateChatRoom();
+
+  const { mutate: createChatRoom, isPending: isCreatingRoom } = useCreateChatRoom();
+  // const { mutate: sendMessage, isPending: isSendingMessage } = useSendMessage();
 
   const handleSubmit = () => {
-    if (isPending) return;
+    if (isCreatingRoom) return;
 
     if (!selectedModel) {
       toast.error("모델을 선택해주세요.");
@@ -23,7 +24,7 @@ export const useMessageSubmit = (
     if (!content) return;
 
     const body = { model: selectedModel.model, message: content };
-    if (chatRoomId === "") {
+    if (!chatRoomId) {
       createChatRoom(body, {
         onSuccess: (data) => navigate(`/chat/${data.data?.id}`),
       });
@@ -32,5 +33,5 @@ export const useMessageSubmit = (
     }
   };
 
-  return { handleSubmit, isPending };
+  return { handleSubmit, isPending: isCreatingRoom };
 };
