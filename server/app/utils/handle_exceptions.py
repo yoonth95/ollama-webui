@@ -15,7 +15,7 @@ def handle_exceptions(func):
     
     except ClientError as e:
       logger.error(f"🚨 Ollama 접속 오류: {e}")
-      return JSONResponse(content=create_response(False, "Ollama 서비스가 실행되지 않았습니다. 설치 또는 실행 상태를 확인하세요.", None), status_code=503)
+      return JSONResponse(content=create_response(False, "Ollama 서비스가 실행되지 않았습니다. 설치 또는 실행 상태를 확인해주세요.", None), status_code=503)
     
     except SQLAlchemyError as e:
       logger.error(f"🚨 데이터베이스 오류: {e}")
