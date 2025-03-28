@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 import useCreateChatRoom from "@/features/chatEditor/queries/useCreateChatRoom";
 
+const TOAST_ID = "model-select-toast";
+
 export const useMessageSubmit = (editorRef: React.RefObject<TiptapEditorRef | null> | undefined) => {
   const navigate = useNavigate();
   const { chatRoomId } = useParams<{ chatRoomId?: string }>();
@@ -17,7 +19,9 @@ export const useMessageSubmit = (editorRef: React.RefObject<TiptapEditorRef | nu
     if (isCreatingRoom) return;
 
     if (!selectedModel) {
-      toast.error("모델을 선택해주세요.");
+      if (!toast.isActive(TOAST_ID)) {
+        toast.error("모델을 선택해주세요.", { toastId: TOAST_ID });
+      }
       return;
     }
     const content = editorRef?.current?.getText();
