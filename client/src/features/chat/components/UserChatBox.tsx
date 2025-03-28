@@ -1,4 +1,4 @@
-import MarkdownRenderer from "@/features/chatMessage/MarkdownRenderer";
+import MarkdownRenderer from "@/features/markdownRender/MarkdownRenderer";
 
 const UserChatBox = ({ content }: { content: string }) => {
   return (

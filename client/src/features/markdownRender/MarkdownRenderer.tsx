@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
-import { ClientSyntaxHighlighter, CodeBlockToolBar } from "@/features/chatMessage/components";
+import { ClientSyntaxHighlighter, CodeBlockToolBar } from "@/features/markdownRender/components";
 import "katex/dist/katex.min.css";
 
 interface MarkdownRendererPropsType {
