@@ -1,4 +1,5 @@
+import { QueryProvider } from "./QueryProvider";
 import { ThemeProvider } from "./ThemeProvider";
 import { ToastProvider } from "./ToastProvider";
 
-export { ThemeProvider, ToastProvider };
+export { QueryProvider, ThemeProvider, ToastProvider };
