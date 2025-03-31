@@ -21,8 +21,11 @@ class RoomService:
   
   @staticmethod
   async def get_rooms_service(db: Session, page: int, limit: int) -> List[dict]:
-    chat_rooms = RoomCrud.get_rooms(db, page, limit)
-    return [RoomResponse.model_validate(room).model_dump() for room in chat_rooms]
+    result = RoomCrud.get_rooms(db, page, limit)
+    return {
+      "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"]],
+      "meta": result["meta"]
+    }
   
   @staticmethod
   async def delete_room_service(db: Session, room_id: str) -> bool:

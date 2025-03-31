@@ -24,6 +24,16 @@ class RoomResponse(BaseModel):
       dump['created_at'] = self.created_at.isoformat()
     return dump
 
+class PaginationMeta(BaseModel):
+  current_page: int
+  total_pages: int
+  has_next_page: bool
+  total_items: int
+
+class RoomListResponse(BaseModel):
+  items: List[RoomResponse]
+  meta: PaginationMeta
+
 class ChatRoomList(BaseModel):
   chat_rooms: List[RoomResponse]
     
