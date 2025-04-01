@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 import useCreateChatRoom from "@/features/chatEditor/queries/useCreateChatRoom";
+import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
 
 const TOAST_ID = "model-select-toast";
 
@@ -11,11 +12,12 @@ export const useMessageSubmit = (editorRef: React.RefObject<TiptapEditorRef | nu
   const { chatRoomId } = useParams<{ chatRoomId?: string }>();
 
   const selectedModel = useModelSelectStore((state) => state.selectedModel);
+  const getImages = useEditorImageStore((state) => state.getImages);
 
   const { mutate: createChatRoom, isPending: isCreatingRoom } = useCreateChatRoom();
   // const { mutate: sendMessage, isPending: isSendingMessage } = useSendMessage();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isCreatingRoom) return;
 
     if (!selectedModel) {
@@ -27,7 +29,11 @@ export const useMessageSubmit = (editorRef: React.RefObject<TiptapEditorRef | nu
     const content = editorRef?.current?.getText();
     if (!content) return;
 
-    const body = { model: selectedModel.model, message: content };
+    const images = await getImages();
+
+    const body =
+      images.length > 0 ? { model: selectedModel.model, content, images } : { model: selectedModel.model, content };
+
     if (!chatRoomId) {
       createChatRoom(body, {
         onSuccess: (data) => navigate(`/chat/${data.data?.id}`),

@@ -1,14 +1,14 @@
-import { z } from "zod";
 import { useQuery, useMutation, useInfiniteQuery, InfiniteData, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { ApiRequestBody, ApiResponse, customAxios, useErrorHandler } from "@/shared/api";
 import {
   DisplayType,
-  AxiosInfiniteResponseType,
   ApiResponseType,
   UseCustomInfiniteQueryType,
   UseCustomMutationType,
   UseCustomQueryType,
+  AxiosInfiniteResponseType,
+  PaginationMeta,
 } from "@/shared/types/apiType";
 import { ApiError } from "@/shared/types/apiErrorType";
 
@@ -165,21 +165,9 @@ export function useCustomInfiniteQuery<T>({
 }: UseCustomInfiniteQueryType<T>) {
   const { withErrorHandling } = useErrorHandler();
 
-  // 페이지네이션 파라미터의 기본값 설정
   const { pageParam = 1, limitParam = 20, pageParamName = "page", limitParamName = "limit" } = paginationOptions;
 
-  // 검증 스키마 설정
-  const itemsSchema = z.object({
-    items: z.array(schema),
-    meta: z.object({
-      currentPage: z.number(),
-      totalPages: z.number().default(0),
-      hasNextPage: z.boolean().default(false),
-      totalItems: z.number().default(0),
-    }),
-  });
-
-  return useInfiniteQuery<AxiosInfiniteResponseType<T>, ApiError, InfiniteData<AxiosInfiniteResponseType<T>, unknown>>({
+  return useInfiniteQuery<AxiosInfiniteResponseType<T>, ApiError, InfiniteData<AxiosInfiniteResponseType<T>, number>>({
     queryKey,
     queryFn: withErrorHandling(async ({ pageParam: currentPageParam }) => {
       const currentPage = currentPageParam as number;
@@ -190,30 +178,22 @@ export function useCustomInfiniteQuery<T>({
         params: { ...config.params, [pageParamName]: currentPage, [limitParamName]: limitParam },
       });
 
-      const responseData = response.data;
-      if (Array.isArray(responseData.data)) {
-        responseData.data = {
-          items: responseData.data,
-          meta: {
-            currentPage,
-            totalPages: 0,
-            hasNextPage: false,
-            totalItems: 0,
-          },
-        };
-      }
-
-      // 응답 데이터를 camelCase로 변환 및 검증
-      const validatedResponse = ApiResponse(itemsSchema, responseData);
+      const validatedResponse = ApiResponse(schema, response.data);
       if (!validatedResponse) throw new Error("응답 데이터 검증 실패");
 
       return validatedResponse as AxiosInfiniteResponseType<T>;
     }, errorOptions),
     initialPageParam: pageParam,
-    getNextPageParam: (lastPage) => (lastPage.data?.meta?.hasNextPage ? lastPage.data.meta.currentPage + 1 : undefined),
+    getNextPageParam: (lastPage) => {
+      if (lastPage.data && typeof lastPage.data === "object" && "meta" in lastPage.data) {
+        const meta = lastPage.data.meta as PaginationMeta;
+        return meta.hasNextPage ? meta.currentPage + 1 : undefined;
+      }
+      return undefined;
+    },
     meta: {
-      errorHandled: Boolean(errorOptions && Object.keys(errorOptions).length > 0), // 에러 옵션이 제공된 경우 errorHandled를 true로 설정
-      errorOptions, // 에러 옵션 전달
+      errorHandled: Boolean(errorOptions && Object.keys(errorOptions).length > 0),
+      errorOptions,
     },
     ...options,
   });

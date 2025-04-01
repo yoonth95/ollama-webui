@@ -56,12 +56,6 @@ export type PaginationMeta = {
   totalItems?: number;
 };
 
-// API 응답에 pagination 메타데이터를 포함하는 타입
-export type AxiosInfiniteResponseType<T> = ApiResponseType<{
-  items: T;
-  meta: PaginationMeta;
-}>;
-
 // 페이지네이션 파라미터 타입
 export type PaginationParams = {
   pageParam?: number;
@@ -69,6 +63,9 @@ export type PaginationParams = {
   pageParamName?: string;
   limitParamName?: string;
 };
+
+// API 응답에 pagination 메타데이터를 포함하는 타입
+export type AxiosInfiniteResponseType<T> = ApiResponseType<T>;
 
 // useInfiniteQuery 타입
 export type UseCustomInfiniteQueryType<T> = {
@@ -79,12 +76,7 @@ export type UseCustomInfiniteQueryType<T> = {
   errorOptions?: ErrorHandlingOptions;
   config?: AxiosRequestConfig;
   options?: Omit<
-    UseInfiniteQueryOptions<
-      AxiosInfiniteResponseType<T>,
-      ApiError,
-      InfiniteData<AxiosInfiniteResponseType<T>, number>,
-      AxiosInfiniteResponseType<T>
-    >,
+    UseInfiniteQueryOptions<AxiosInfiniteResponseType<T>, ApiError, InfiniteData<AxiosInfiniteResponseType<T>, number>>,
     "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"
   >;
 };

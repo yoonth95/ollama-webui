@@ -14,13 +14,31 @@ class RoomCrud:
   @staticmethod
   def get_rooms(db: Session, page: int, limit: int):
     offset = (page - 1) * limit
-    return (
+    
+    # 전체 개수 조회
+    total_items = db.query(Room).count()
+    
+    # 전체 페이지 수 계산
+    total_pages = (total_items + limit - 1) // limit
+    
+    # 항목 조회
+    items = (
       db.query(Room)
       .order_by(Room.created_at.desc())
       .offset(offset)
       .limit(limit)
       .all()
     )
+    
+    return {
+      "items": items,
+      "meta": {
+        "current_page": page,
+        "total_pages": total_pages,
+        "has_next_page": page < total_pages,
+        "total_items": total_items
+      }
+    }
 
   @staticmethod
   def delete_room(db: Session, room_id: str):

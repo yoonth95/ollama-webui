@@ -1,12 +1,12 @@
 import { queryKeys, useCustomInfiniteQuery } from "@/shared/api";
-import { ChatRoomSchema, ChatRoomType } from "@/shared/types/chatRoomType";
+import { ChatRoomInfiniteSchema, ChatRoomInfiniteType } from "@/shared/types/chatRoomType";
 import { DisplayType } from "@/shared/types/apiType";
 
 const useGetChatRooms = (type: DisplayType) => {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomInfiniteQuery<ChatRoomType>({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomInfiniteQuery<ChatRoomInfiniteType>({
     queryKey: queryKeys.rooms.list(),
     endpoint: "/room/get-rooms",
-    schema: ChatRoomSchema,
+    schema: ChatRoomInfiniteSchema,
     errorOptions: { type },
     options: { refetchOnWindowFocus: true },
   });
@@ -14,7 +14,7 @@ const useGetChatRooms = (type: DisplayType) => {
   const flatData = data?.pages.flatMap((page) => page.data?.items || []) || [];
 
   return {
-    data: flatData || [],
+    data: flatData,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,

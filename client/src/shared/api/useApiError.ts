@@ -28,15 +28,15 @@ export const useApiError = () => {
         error.message.includes("Network Error")
       ) {
         errorMessage = "서버 연결이 원활하지 않습니다.";
-        statusCode = 503;
+        statusCode = 500;
       }
       // 프록시나 서버에서 잘못된 응답을 준 경우
       else if (error.code === "ERR_BAD_RESPONSE") {
         if (!error.response?.data) {
           errorMessage = "서버 연결이 원활하지 않습니다.";
-          statusCode = 503;
+          statusCode = 500;
         } else {
-          errorMessage = "서버 응답이 올바르지 않습니다.";
+          errorMessage = error.response.data.message || "서버 응답이 올바르지 않습니다.";
           statusCode = error.response.status;
         }
       }
