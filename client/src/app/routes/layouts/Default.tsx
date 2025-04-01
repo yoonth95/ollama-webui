@@ -3,20 +3,23 @@ import { useCookies } from "react-cookie";
 import { SidebarProvider } from "@/shared/ui/sidebar";
 import AppSidebar from "@/widgets/layout/sidebar/AppSidebar";
 import Header from "@/widgets/layout/header/Header";
+import { MainDropzone } from "@/features/dropzone/MainDropzone";
 
 export default function DefaultLayout() {
   const [cookies] = useCookies(["sidebar"]);
   const defaultOpen = cookies?.sidebar === true;
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="bg-background flex h-screen">
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar />
         <div className="flex flex-1 flex-col">
-          <Header />
-          <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
-            <Outlet />
-          </main>
+          <MainDropzone>
+            <Header />
+            <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
+              <Outlet />
+            </main>
+          </MainDropzone>
         </div>
       </SidebarProvider>
     </div>
