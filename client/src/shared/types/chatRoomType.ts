@@ -8,8 +8,9 @@ export const ChatRoomSchema = z.object({
 export const ChatRoomArraySchema = z.array(ChatRoomSchema);
 
 export const CreateChatRoomRequestSchema = z.object({
-  message: z.string(),
+  content: z.string(),
   model: z.string(),
+  images: z.array(z.string()).optional(),
 });
 
 export const UpdateChatRoomTitleRequestSchema = z.object({
