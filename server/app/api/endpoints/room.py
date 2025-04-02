@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.services.room import RoomService
-from app.schemas.room import ChatRequest, RoomRenameRequest
+from app.schemas.room import RoomCreateRequest, RoomRenameRequest
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
 from app.db.database import get_db
@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 ## 채팅방 생성
 @router.post("/room/create-room")
 @handle_exceptions
-async def create_new_room(request: ChatRequest, db: Session = Depends(get_db)):
+async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_db)):
   logger.info(f"📩 클라이언트 채팅방 생성: {request}")
   
-  if not request.message:
+  if not request.content:
     return JSONResponse(content=create_response(False, "질문을 입력해주세요.", None), status_code=400)
 
   if not request.model:

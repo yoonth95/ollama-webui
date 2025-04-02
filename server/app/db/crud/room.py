@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 from app.db.models.room import Room
-from app.schemas.room import RoomCreate
+from app.schemas.room import RoomTitle
 
 class RoomCrud:
   @staticmethod
-  def create_new_room(db: Session, chat_room_data: RoomCreate):
+  def create_new_room(db: Session, chat_room_data: RoomTitle):
     new_room = Room(title=chat_room_data.title)
     db.add(new_room)
     db.commit()

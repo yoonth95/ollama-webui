@@ -2,16 +2,21 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import List
 
-class ChatRequest(BaseModel):
+class RoomCreateRequest(BaseModel):
   model: str
-  message: str
+  content: str
   
-class RoomCreate(BaseModel):
+class RoomRenameRequest(BaseModel):
+  room_id: str
+  new_title: str
+  
+class RoomTitle(BaseModel):
   title: str
 
 class RoomResponse(BaseModel):
   id: str
   title: str
+  is_archived: bool
   created_at: datetime
   
   model_config = {
@@ -33,10 +38,4 @@ class PaginationMeta(BaseModel):
 class RoomListResponse(BaseModel):
   items: List[RoomResponse]
   meta: PaginationMeta
-
-class ChatRoomList(BaseModel):
-  chat_rooms: List[RoomResponse]
-    
-class RoomRenameRequest(BaseModel):
-  room_id: str
-  new_title: str
+  
