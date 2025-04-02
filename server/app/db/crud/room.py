@@ -15,8 +15,8 @@ class RoomCrud:
   def get_rooms(db: Session, page: int, limit: int):
     offset = (page - 1) * limit
     
-    # 전체 개수 조회
-    total_items = db.query(Room).count()
+    # 전체 개수 조회 (보관되지 않은 채팅방만)
+    total_items = db.query(Room).filter(Room.is_archived == False).count()
     
     # 전체 페이지 수 계산
     total_pages = (total_items + limit - 1) // limit
@@ -24,6 +24,7 @@ class RoomCrud:
     # 항목 조회
     items = (
       db.query(Room)
+      .filter(Room.is_archived == False)
       .order_by(Room.created_at.desc())
       .offset(offset)
       .limit(limit)
