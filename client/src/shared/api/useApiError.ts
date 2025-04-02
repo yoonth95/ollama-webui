@@ -61,7 +61,11 @@ export const useApiError = () => {
   const showError = (type: string, message: string, statusCode: number) => {
     switch (type) {
       case DisplayType.Toast:
-        toast.error(message);
+        toast.error(message, {
+          style: {
+            whiteSpace: "pre-line",
+          },
+        });
         break;
       case DisplayType.Modal:
         // 모달 로직 추가
