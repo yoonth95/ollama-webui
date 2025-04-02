@@ -132,7 +132,7 @@ A component by [Espen Hovlandsdal](https://espen.codes/)
 
   return (
     <section className="flex w-full flex-1 flex-col items-end justify-start overflow-y-auto">
-      <CustomScrollbar>
+      <CustomScrollbar className="h-[calc(100vh-170px)]">
         <UserChatBox content={message} />
         <BotChatBox content={message} />
       </CustomScrollbar>
