@@ -16,7 +16,7 @@ export default function DefaultLayout() {
         <div className="flex flex-1 flex-col">
           <MainDropzone>
             <Header />
-            <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
+            <main className="relative mx-2 flex flex-1 flex-col items-center justify-center overflow-hidden sm:mx-5">
               <Outlet />
             </main>
           </MainDropzone>
