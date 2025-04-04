@@ -14,9 +14,6 @@ export function MainDropzone({ children }: MainDropzoneProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       acceptedFiles.forEach((file) => {
-        console.log("file", file);
-        console.log("file.name", file.name);
-        console.log("file.type", file.type);
         uploadImage(file, file.name, file.type);
       });
       setIsDragging(false);
@@ -38,7 +35,7 @@ export function MainDropzone({ children }: MainDropzoneProps) {
       <input {...getInputProps()} />
       {isDragging && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-xs">
-          <div className="bg-accent text-accent-foreground flex h-42 w-[calc(100%-35rem)] flex-col items-center justify-center gap-3 rounded-lg p-6 text-center transition-colors duration-200">
+          <div className="bg-accent text-accent-foreground flex h-42 w-[25rem] flex-col items-center justify-center gap-3 rounded-lg p-6 text-center transition-colors duration-200">
             <ImagePlus className="text-muted-foreground h-8 w-8" />
             <div className="flex flex-col gap-1">
               <p className="text-md">이미지 파일 추가</p>
