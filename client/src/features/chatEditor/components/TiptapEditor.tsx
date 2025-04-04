@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 import { usePasteImageHandler } from "@/features/chatEditor/hooks/usePasteImageHandler";
 import { createEditorExtensions } from "@/features/chatEditor/configs/editorExtensions";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 
 interface TiptapEditorPropsType {
   editorRef?: RefObject<TiptapEditorRef | null>;
@@ -14,9 +15,10 @@ interface TiptapEditorPropsType {
 const TiptapEditor = memo(
   ({ placeholder = "메시지를 입력하세요.", onChange, editorRef, onSubmit }: TiptapEditorPropsType) => {
     const handlePasteImage = usePasteImageHandler();
+    const isMobile = useIsMobile();
 
     const editor = useEditor({
-      extensions: createEditorExtensions(placeholder),
+      extensions: createEditorExtensions(placeholder, isMobile),
       content: "",
       onUpdate: ({ editor }) => {
         onChange?.(editor.storage.markdown.getMarkdown());
@@ -28,11 +30,18 @@ const TiptapEditor = memo(
         handlePaste: (_, event) => handlePasteImage(event),
         handleDOMEvents: {
           keydown: (view, event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              const content = view.state.doc.textContent;
-              if (content.trim() !== "") onSubmit();
-              return true;
+            if (event.key === "Enter") {
+              // 모바일: Enter로 줄바꿈, 버튼으로 전송
+              if (isMobile) {
+                return false;
+              }
+              // PC: Shift+Enter로 줄바꿈, Enter로 전송
+              else if (!event.shiftKey) {
+                event.preventDefault();
+                const content = view.state.doc.textContent;
+                if (content.trim() !== "") onSubmit();
+                return true;
+              }
             }
             return false;
           },

@@ -16,7 +16,7 @@ import {
 
 const lowlight = createLowlight(common);
 
-export const createEditorExtensions = (placeholder: string) => [
+export const createEditorExtensions = (placeholder: string, isMobile?: boolean) => [
   StarterKit.configure({
     codeBlock: false,
     horizontalRule: false,
@@ -31,7 +31,7 @@ export const createEditorExtensions = (placeholder: string) => [
   Markdown,
   HorizontalRule,
   HorizontalRuleEnhancementExtension,
-  ShiftEnterExtension,
+  ...(!isMobile ? [ShiftEnterExtension] : []),
   CodeBlockEnhancementExtension,
   Placeholder.configure({
     placeholder: ({ editor }) => {
