@@ -15,8 +15,10 @@ export default function DefaultLayout() {
         <AppSidebar />
         <div className="flex flex-1 flex-col">
           <MainDropzone>
-            <Header />
-            <main className="relative mx-2 flex flex-1 flex-col items-center justify-center overflow-hidden sm:mx-5">
+            <div className="bg-background sticky top-0 z-10">
+              <Header />
+            </div>
+            <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
               <Outlet />
             </main>
           </MainDropzone>
