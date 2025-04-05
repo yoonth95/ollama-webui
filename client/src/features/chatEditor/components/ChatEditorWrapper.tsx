@@ -28,7 +28,7 @@ const ChatEditorWrapper = () => {
   return (
     <div
       ref={handleEditorClick}
-      className="border-border dark:border-accent bg-background dark:bg-accent flex w-full cursor-text flex-col rounded-2xl border shadow-sm"
+      className="border-border dark:border-accent bg-background dark:bg-accent mx-4 flex w-full cursor-text flex-col rounded-2xl border shadow-sm"
     >
       <ImageContainer />
       <TiptapEditor
