@@ -42,55 +42,8 @@
   --inline-code: oklch(65.34% 0.1835 23.68);
   --hr: oklch(29.05% 0.0459 55.14 / 7.84%);
   --hr-select: oklch(0% 0 0);
-
-  /* 마크다운 */
+  --markdown-code-block-bg: #1e1e1e;
   --link: #0969da;
-  --focus-outlineColor: #0969da;
-  --fgColor-success: #1a7f37;
-  --fgColor-attention: #9a6700;
-  --fgColor-danger: #d1242f;
-  --fgColor-done: #8250df;
-  --bgColor-neutral-muted: #818b981f;
-  --bgColor-attention-muted: #fff8c5;
-  --borderColor-muted: #d1d9e0b3;
-  --borderColor-neutral-muted: #d1d9e0b3;
-  --borderColor-accent-emphasis: #0969da;
-  --borderColor-success-emphasis: #1a7f37;
-  --borderColor-attention-emphasis: #9a6700;
-  --borderColor-danger-emphasis: #cf222e;
-  --borderColor-done-emphasis: #8250df;
-
-  /* 구문 강조 변수 */
-  --color-prettylights-syntax-comment: #59636e;
-  --color-prettylights-syntax-constant: #0550ae;
-  --color-prettylights-syntax-constant-other-reference-link: #0a3069;
-  --color-prettylights-syntax-entity: #6639ba;
-  --color-prettylights-syntax-storage-modifier-import: #1f2328;
-  --color-prettylights-syntax-entity-tag: #0550ae;
-  --color-prettylights-syntax-keyword: #cf222e;
-  --color-prettylights-syntax-string: #0a3069;
-  --color-prettylights-syntax-variable: #953800;
-  --color-prettylights-syntax-brackethighlighter-unmatched: #82071e;
-  --color-prettylights-syntax-brackethighlighter-angle: #59636e;
-  --color-prettylights-syntax-invalid-illegal-text: #f6f8fa;
-  --color-prettylights-syntax-invalid-illegal-bg: #82071e;
-  --color-prettylights-syntax-carriage-return-text: #f6f8fa;
-  --color-prettylights-syntax-carriage-return-bg: #cf222e;
-  --color-prettylights-syntax-string-regexp: #116329;
-  --color-prettylights-syntax-markup-list: #3b2300;
-  --color-prettylights-syntax-markup-heading: #0550ae;
-  --color-prettylights-syntax-markup-italic: #1f2328;
-  --color-prettylights-syntax-markup-bold: #1f2328;
-  --color-prettylights-syntax-markup-deleted-text: #82071e;
-  --color-prettylights-syntax-markup-deleted-bg: #ffebe9;
-  --color-prettylights-syntax-markup-inserted-text: #116329;
-  --color-prettylights-syntax-markup-inserted-bg: #dafbe1;
-  --color-prettylights-syntax-markup-changed-text: #953800;
-  --color-prettylights-syntax-markup-changed-bg: #ffd8b5;
-  --color-prettylights-syntax-markup-ignored-text: #d1d9e0;
-  --color-prettylights-syntax-markup-ignored-bg: #0550ae;
-  --color-prettylights-syntax-meta-diff-range: #8250df;
-  --color-prettylights-syntax-sublimelinter-gutter-mark: #818b98;
 }
 
 .dark {
@@ -138,55 +91,8 @@
   --inline-code: oklch(65.34% 0.1835 23.68); /* #eb5757 */
   --hr: oklch(38.67% 0 0); /* #444444 */
   --hr-select: oklch(100% 0 0); /* #ffffff */
-
-  /* 마크다운 */
+  --markdown-code-block-bg: #1e1e1e;
   --link: #4493f8;
-  --focus-outlineColor: #1f6feb;
-  --fgColor-success: #3fb950;
-  --fgColor-attention: #d29922;
-  --fgColor-danger: #f85149;
-  --fgColor-done: #ab7df8;
-  --bgColor-neutral-muted: #656c7633;
-  --bgColor-attention-muted: #bb800926;
-  --borderColor-muted: #3d444db3;
-  --borderColor-neutral-muted: #3d444db3;
-  --borderColor-accent-emphasis: #1f6feb;
-  --borderColor-success-emphasis: #238636;
-  --borderColor-attention-emphasis: #9e6a03;
-  --borderColor-danger-emphasis: #da3633;
-  --borderColor-done-emphasis: #8957e5;
-
-  /* 구문 강조 변수 */
-  --color-prettylights-syntax-comment: #9198a1;
-  --color-prettylights-syntax-constant: #79c0ff;
-  --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
-  --color-prettylights-syntax-entity: #d2a8ff;
-  --color-prettylights-syntax-storage-modifier-import: #f0f6fc;
-  --color-prettylights-syntax-entity-tag: #7ee787;
-  --color-prettylights-syntax-keyword: #ff7b72;
-  --color-prettylights-syntax-string: #a5d6ff;
-  --color-prettylights-syntax-variable: #ffa657;
-  --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
-  --color-prettylights-syntax-brackethighlighter-angle: #9198a1;
-  --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
-  --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
-  --color-prettylights-syntax-carriage-return-text: #f0f6fc;
-  --color-prettylights-syntax-carriage-return-bg: #b62324;
-  --color-prettylights-syntax-string-regexp: #7ee787;
-  --color-prettylights-syntax-markup-list: #f2cc60;
-  --color-prettylights-syntax-markup-heading: #1f6feb;
-  --color-prettylights-syntax-markup-italic: #f0f6fc;
-  --color-prettylights-syntax-markup-bold: #f0f6fc;
-  --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
-  --color-prettylights-syntax-markup-deleted-bg: #67060c;
-  --color-prettylights-syntax-markup-inserted-text: #aff5b4;
-  --color-prettylights-syntax-markup-inserted-bg: #033a16;
-  --color-prettylights-syntax-markup-changed-text: #ffdfb6;
-  --color-prettylights-syntax-markup-changed-bg: #5a1e02;
-  --color-prettylights-syntax-markup-ignored-text: #f0f6fc;
-  --color-prettylights-syntax-markup-ignored-bg: #1158c7;
-  --color-prettylights-syntax-meta-diff-range: #d2a8ff;
-  --color-prettylights-syntax-sublimelinter-gutter-mark: #3d444d;
 }
 
 @theme inline {
@@ -212,6 +118,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-link: var(--link);
+  --color-inline-code: var(--inline-code);
+  --color-inline-code-bg: var(--inline-code-bg);
+  --color-code-block-bg: var(--code-block-bg);
+  --color-markdown-code-block-bg: var(--markdown-code-block-bg);
+  --color-hr: var(--hr);
+  --color-hr-select: var(--hr-select);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -248,14 +161,120 @@
     scrollbar-width: none;
   }
 
+  /* 코드 블록 툴바 */
   .code-block-toolbar {
     @apply bg-secondary-foreground text-secondary relative rounded-t-lg;
   }
-
   .user-message .code-block-toolbar {
     @apply dark:bg-background dark:text-primary;
   }
   .bot-message .code-block-toolbar {
     @apply dark:bg-secondary dark:text-secondary-foreground;
+  }
+
+  /* 마크다운 */
+  .markdown-container {
+    @apply max-w-full overflow-hidden font-sans leading-relaxed break-words text-neutral-800 dark:text-neutral-200;
+  }
+  .markdown-container h1 {
+    @apply mt-6 mb-4 text-2xl font-bold;
+  }
+  .markdown-container h2 {
+    @apply mt-5 mb-3 text-xl font-bold;
+  }
+  .markdown-container h3 {
+    @apply mt-4 mb-2 text-lg font-semibold;
+  }
+  .markdown-container p {
+    @apply my-3;
+  }
+  .markdown-container a {
+    @apply text-link break-all hover:underline;
+  }
+  .markdown-container img {
+    @apply h-auto max-w-full;
+  }
+  .markdown-container pre {
+    @apply w-full whitespace-pre-wrap;
+  }
+  .markdown-container table {
+    @apply block w-full table-fixed;
+  }
+  .markdown-container code {
+    @apply break-words whitespace-pre-wrap;
+  }
+
+  .markdown-container ul,
+  .markdown-container ol {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    padding-left: 2em;
+  }
+  .markdown-container li {
+    @apply my-1;
+  }
+  .markdown-container ul {
+    list-style-type: disc;
+  }
+  .markdown-container ol {
+    list-style-type: decimal;
+  }
+  .markdown-container ol ol,
+  .markdown-container ul ol {
+    list-style-type: lower-roman;
+  }
+  .markdown-container ul ul {
+    list-style-type: circle;
+  }
+  .markdown-container ul ul ol,
+  .markdown-container ul ol ol,
+  .markdown-container ol ul ol,
+  .markdown-container ol ol ol {
+    list-style-type: lower-alpha;
+  }
+
+  .markdown-container blockquote {
+    @apply border-ring text-ring my-3 ml-4 border-l-4 pl-4 italic;
+  }
+
+  .markdown-container table {
+    @apply my-4 min-w-full border-collapse;
+  }
+  .markdown-container th {
+    @apply border-ring bg-muted border px-4 py-2;
+  }
+  .markdown-container td {
+    @apply border-ring border px-4 py-2;
+  }
+  .markdown-container .no-language {
+    @apply text-foreground bg-transparent p-0 font-mono text-sm;
+  }
+  .markdown-container .inline-code {
+    @apply bg-inline-code-bg text-inline-code rounded px-[0.5em] py-[0.25em] font-mono text-[85%];
+  }
+
+  @media (max-width: 960px) {
+    .markdown-container pre {
+      max-width: 100%;
+      white-space: pre-wrap !important;
+    }
+
+    .markdown-container code {
+      word-break: break-all;
+      white-space: pre-wrap !important;
+      max-width: 100%;
+    }
+
+    .markdown-container table {
+      display: block;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    .markdown-container td,
+    .markdown-container th {
+      word-break: break-all;
+      max-width: 100%;
+    }
   }
 }
