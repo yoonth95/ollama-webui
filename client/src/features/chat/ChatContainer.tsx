@@ -1,6 +1,4 @@
 import { UserChatBox, BotChatBox } from "@/features/chat/components";
-import "@/features/chat/styles/markdown.css";
-import { CustomScrollbar } from "@/shared/ui/custom-scrollbar";
 
 const ChatContainer = ({ chatRoomId }: { chatRoomId: string }) => {
   console.log(chatRoomId);
@@ -132,10 +130,8 @@ A component by [Espen Hovlandsdal](https://espen.codes/)
 
   return (
     <section className="flex w-full flex-1 flex-col items-end justify-start overflow-y-auto">
-      <CustomScrollbar className="h-[calc(100vh-170px)]">
-        <UserChatBox content={message} />
-        <BotChatBox content={message} />
-      </CustomScrollbar>
+      <UserChatBox content={message} />
+      <BotChatBox content={message} />
     </section>
   );
 };
