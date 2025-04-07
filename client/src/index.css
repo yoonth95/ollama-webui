@@ -163,7 +163,7 @@
 
   /* 코드 블록 툴바 */
   .code-block-toolbar {
-    @apply bg-secondary-foreground text-secondary relative rounded-t-lg;
+    @apply bg-secondary-foreground text-secondary mb-[-7px];
   }
   .user-message .code-block-toolbar {
     @apply dark:bg-background dark:text-primary;
@@ -198,7 +198,7 @@
     @apply w-full whitespace-pre-wrap;
   }
   .markdown-container table {
-    @apply block w-full table-fixed;
+    @apply block w-full table-fixed break-words;
   }
   .markdown-container code {
     @apply break-words whitespace-pre-wrap;
