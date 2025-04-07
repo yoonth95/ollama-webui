@@ -1,214 +1,162 @@
-.tiptap {
-  position: relative;
-
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  scrollbar-color: var(--color-muted-foreground) var(--sidebar);
-
-  > p:first-child {
-    margin-top: 0;
+@layer base {
+  .tiptap {
+    @apply relative;
+    scrollbar-color: var(--color-muted-foreground) var(--sidebar);
   }
 
-  /* Placeholder styles */
-  p.is-editor-empty:first-child::before {
+  .tiptap::-webkit-scrollbar {
+    @apply h-[10px] w-[10px];
+  }
+
+  .tiptap > p:first-child {
+    @apply mt-0;
+  }
+
+  .tiptap p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
-    pointer-events: none;
-    float: left;
-    height: 0;
-    color: var(--muted-foreground);
+    @apply text-muted-foreground pointer-events-none float-left h-0;
   }
 
-  /* List styles */
-  ol,
-  ul {
-    margin: 20px 0;
-    padding-left: 16px;
-    padding-right: 16px;
+  .tiptap ul,
+  .tiptap ol {
+    @apply mt-0 mb-4 pl-8;
   }
-
-  ol {
-    list-style-type: decimal;
+  .tiptap li {
+    @apply my-1;
   }
-
-  ul {
+  .tiptap ul {
     list-style-type: disc;
   }
-
-  li p {
-    margin-top: 4px;
-    margin-bottom: 4px;
+  .tiptap ol {
+    list-style-type: decimal;
+  }
+  .tiptap ol ol,
+  .tiptap ul ol {
+    list-style-type: lower-roman;
+  }
+  .tiptap ul ul {
+    list-style-type: circle;
+  }
+  .tiptap ul ul ol,
+  .tiptap ul ol ol,
+  .tiptap ol ul ol,
+  .tiptap ol ol ol {
+    list-style-type: lower-alpha;
   }
 
-  /* Heading styles */
-  h1,
-  h2 {
-    margin-top: 56px;
-    margin-bottom: 24px;
+  .tiptap h1 {
+    @apply mt-6 mb-4 text-2xl font-bold;
+  }
+  .tiptap h2 {
+    @apply mt-5 mb-3 text-xl font-bold;
+  }
+  .tiptap h3 {
+    @apply mt-4 mb-2 text-lg font-semibold;
   }
 
-  h3,
-  h4,
-  h5,
-  h6 {
-    margin-top: 40px;
+  .tiptap h4,
+  .tiptap h5,
+  .tiptap h6 {
+    @apply text-base;
   }
 
-  h1 {
-    font-size: 1.4rem;
+  .tiptap mark {
+    @apply rounded bg-[#faf594] px-1 py-[0.1rem];
   }
 
-  h2 {
-    font-size: 1.2rem;
+  .tiptap blockquote {
+    @apply border-ring text-ring my-3 ml-4 border-l-4 pl-4 italic;
   }
 
-  h3 {
-    font-size: 1.1rem;
+  .tiptap hr {
+    @apply border-hr my-8 border-0 border-t;
   }
 
-  h4,
-  h5,
-  h6 {
-    font-size: 1rem;
+  .tiptap hr.ProseMirror-selectednode {
+    @apply border-hr-select;
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    line-height: 1.2;
-    font-weight: bold;
-    text-wrap: pretty;
+  .tiptap code {
+    @apply bg-inline-code-bg text-inline-code rounded px-[0.5em] py-[0.25em] font-mono text-[85%];
   }
 
-  /* Mark styles */
-  mark {
-    background-color: #faf594;
-    padding: 0.1rem 0.25rem;
-    border-radius: 4px;
+  .tiptap pre {
+    @apply bg-code-block-bg text-foreground my-6 rounded px-3 py-2 font-mono;
   }
 
-  /* Blockquote styles */
-  blockquote {
-    margin: 24px 0;
-    padding-left: 16px;
-    border-left: 4px solid rgba(61, 37, 20, 0.12);
+  .tiptap pre code {
+    @apply bg-transparent p-0 text-sm text-inherit;
   }
 
-  /* HR styles */
-  hr {
-    margin: 32px 0;
-    border: 0;
-    border-top: 1px solid var(--hr);
+  .tiptap pre .hljs {
+    @apply block overflow-x-auto bg-[#282c34] p-2 text-[#abb2bf];
   }
 
-  hr.ProseMirror-selectednode {
-    border-color: var(--hr-select);
+  .tiptap pre .hljs-comment,
+  .tiptap pre .hljs-quote {
+    @apply text-[#5c6370] italic;
   }
 
-  /* Code and preformatted text styles */
-  code {
-    background-color: var(--inline-code-bg);
-    padding: 0.25em 0.5em;
-    font-size: 0.85rem;
-    border-radius: 4px;
-    color: var(--inline-code);
+  .tiptap pre .hljs-doctag,
+  .tiptap pre .hljs-formula,
+  .tiptap pre .hljs-keyword {
+    @apply text-[#c678dd];
   }
 
-  pre {
-    margin: 24px 0;
-    background-color: var(--code-block-bg);
-    padding: 8px 12px;
-    font-family: "JetBrainsMono", monospace;
-    font-size: var(--text-foreground);
-    border-radius: 8px;
+  .tiptap pre .hljs-deletion,
+  .tiptap pre .hljs-name,
+  .tiptap pre .hljs-section,
+  .tiptap pre .hljs-selector-tag,
+  .tiptap pre .hljs-subst {
+    @apply text-[#e06c75];
+  }
 
-    code {
-      background-color: transparent;
-      padding: 0;
-      font-size: 0.8rem;
-      color: inherit;
-    }
+  .tiptap pre .hljs-literal {
+    @apply text-[#56b6c2];
+  }
 
-    /* Code styling */
-    .hljs {
-      display: block;
-      overflow-x: auto;
-      padding: 0.5em;
-      color: #abb2bf;
-      background: #282c34;
-    }
+  .tiptap pre .hljs-addition,
+  .tiptap pre .hljs-attribute,
+  .tiptap pre .hljs-meta-string,
+  .tiptap pre .hljs-regexp,
+  .tiptap pre .hljs-string {
+    @apply text-[#98c379];
+  }
 
-    .hljs-comment,
-    .hljs-quote {
-      color: #5c6370;
-      font-style: italic;
-    }
+  .tiptap pre .hljs-built_in,
+  .tiptap pre .hljs-class .hljs-title {
+    @apply text-[#e6c07b];
+  }
 
-    .hljs-doctag,
-    .hljs-formula,
-    .hljs-keyword {
-      color: #c678dd;
-    }
+  .tiptap pre .hljs-attr,
+  .tiptap pre .hljs-number,
+  .tiptap pre .hljs-selector-attr,
+  .tiptap pre .hljs-selector-class,
+  .tiptap pre .hljs-selector-pseudo,
+  .tiptap pre .hljs-template-variable,
+  .tiptap pre .hljs-type,
+  .tiptap pre .hljs-variable {
+    @apply text-[#d19a66];
+  }
 
-    .hljs-deletion,
-    .hljs-name,
-    .hljs-section,
-    .hljs-selector-tag,
-    .hljs-subst {
-      color: #e06c75;
-    }
+  .tiptap pre .hljs-bullet,
+  .tiptap pre .hljs-link,
+  .tiptap pre .hljs-meta,
+  .tiptap pre .hljs-selector-id,
+  .tiptap pre .hljs-symbol,
+  .tiptap pre .hljs-title {
+    @apply text-[#61aeee];
+  }
 
-    .hljs-literal {
-      color: #56b6c2;
-    }
+  .tiptap pre .hljs-emphasis {
+    @apply italic;
+  }
 
-    .hljs-addition,
-    .hljs-attribute,
-    .hljs-meta-string,
-    .hljs-regexp,
-    .hljs-string {
-      color: #98c379;
-    }
+  .tiptap pre .hljs-strong {
+    @apply font-bold;
+  }
 
-    .hljs-built_in,
-    .hljs-class .hljs-title {
-      color: #e6c07b;
-    }
-
-    .hljs-attr,
-    .hljs-number,
-    .hljs-selector-attr,
-    .hljs-selector-class,
-    .hljs-selector-pseudo,
-    .hljs-template-variable,
-    .hljs-type,
-    .hljs-variable {
-      color: #d19a66;
-    }
-
-    .hljs-bullet,
-    .hljs-link,
-    .hljs-meta,
-    .hljs-selector-id,
-    .hljs-symbol,
-    .hljs-title {
-      color: #61aeee;
-    }
-
-    .hljs-emphasis {
-      font-style: italic;
-    }
-
-    .hljs-strong {
-      font-weight: 700;
-    }
-
-    .hljs-link {
-      text-decoration: underline;
-    }
+  .tiptap pre .hljs-link {
+    @apply underline;
   }
 }
