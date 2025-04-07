@@ -5,6 +5,7 @@ export const ChatRoomSchema = z.object({
   title: z.string(),
   isArchived: z.boolean(),
   createdAt: z.string(),
+  updatedAt: z.string(),
 });
 export const ChatRoomArraySchema = z.array(ChatRoomSchema);
 
