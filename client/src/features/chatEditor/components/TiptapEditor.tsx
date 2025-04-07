@@ -1,8 +1,9 @@
 import { memo, RefObject, useCallback, useImperativeHandle } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
-import { usePasteImageHandler } from "@/features/chatEditor/hooks/usePasteImageHandler";
 import { createEditorExtensions } from "@/features/chatEditor/configs/editorExtensions";
+import { usePasteImageHandler } from "@/features/chatEditor/hooks/usePasteImageHandler";
+import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
+import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 
 interface TiptapEditorPropsType {
@@ -15,6 +16,7 @@ interface TiptapEditorPropsType {
 const TiptapEditor = memo(
   ({ placeholder = "메시지를 입력하세요.", onChange, editorRef, onSubmit }: TiptapEditorPropsType) => {
     const handlePasteImage = usePasteImageHandler();
+    const images = useEditorImageStore((state) => state.images);
     const isMobile = useIsMobile();
 
     const editor = useEditor({
@@ -39,7 +41,7 @@ const TiptapEditor = memo(
               else if (!event.shiftKey) {
                 event.preventDefault();
                 const content = view.state.doc.textContent;
-                if (content.trim() !== "") onSubmit();
+                if (content.trim() !== "" || images.length > 0) onSubmit();
                 return true;
               }
             }
