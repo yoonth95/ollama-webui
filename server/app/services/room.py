@@ -13,7 +13,8 @@ class RoomService:
       id=new_room.id,
       title=new_room.title,
       is_archived=new_room.is_archived,
-      created_at=new_room.created_at
+      created_at=new_room.created_at,
+      updated_at=new_room.updated_at
     )
     
     return json.loads(response.model_dump_json())

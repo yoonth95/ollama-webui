@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 class RoomCreateRequest(BaseModel):
   model: str
   content: str
+  images: Optional[List[str]] = None
   
 class RoomRenameRequest(BaseModel):
   room_id: str
@@ -18,6 +19,7 @@ class RoomResponse(BaseModel):
   title: str
   is_archived: bool
   created_at: datetime
+  updated_at: datetime
   
   model_config = {
     "from_attributes": True
@@ -27,6 +29,8 @@ class RoomResponse(BaseModel):
     dump = super().model_dump(**kwargs)
     if isinstance(self.created_at, datetime):
       dump['created_at'] = self.created_at.isoformat()
+    if isinstance(self.updated_at, datetime):
+      dump['updated_at'] = self.updated_at.isoformat()
     return dump
 
 class PaginationMeta(BaseModel):
