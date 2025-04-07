@@ -135,6 +135,7 @@ A component by [Espen Hovlandsdal](https://espen.codes/)
         <div className="flex w-full flex-col gap-4 text-base md:max-w-[42rem] md:gap-5 lg:gap-6 xl:max-w-[48rem]">
           <UserChatBox content={message} />
           <BotChatBox content={message} />
+          <br />
         </div>
       </CustomScrollbar>
     </section>
