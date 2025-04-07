@@ -1,5 +1,4 @@
 import { ChatEditorWrapper } from "@/features/chatEditor/components";
-import "@/features/chatEditor/styles/editor.css";
 
 const EditorContainer = () => {
   return (
