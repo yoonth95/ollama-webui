@@ -8,7 +8,7 @@ const Chat = () => {
   console.log(chatRoomId);
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex h-[calc(100vh-3rem)] w-full flex-col">
       <Suspense fallback={<div>메시지 로딩 중...</div>}>
         <ChatContainer chatRoomId={chatRoomId} />
       </Suspense>

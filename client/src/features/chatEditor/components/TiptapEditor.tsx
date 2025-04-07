@@ -25,7 +25,7 @@ const TiptapEditor = memo(
       },
       editorProps: {
         attributes: {
-          class: "focus:outline-none w-full px-4 py-3 max-h-84 overflow-y-auto",
+          class: "focus:outline-none w-full px-4 py-3 max-h-74 overflow-y-auto",
         },
         handlePaste: (_, event) => handlePasteImage(event),
         handleDOMEvents: {
