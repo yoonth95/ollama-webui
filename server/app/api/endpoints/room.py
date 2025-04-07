@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.services.room import RoomService
+from app.services.chat import ChatService
 from app.schemas.room import RoomCreateRequest, RoomRenameRequest
+from app.schemas.chat import ChatUserMessageType
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
 from app.db.database import get_db
@@ -17,17 +19,26 @@ logger = logging.getLogger(__name__)
 @router.post("/room/create-room")
 @handle_exceptions
 async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_db)):
-  logger.info(f"📩 클라이언트 채팅방 생성: {request}")
+  logger.info(f"📩 클라이언트 채팅방 생성")
   
-  if not request.content:
-    return JSONResponse(content=create_response(False, "질문을 입력해주세요.", None), status_code=400)
+  if not request.content and not request.images:
+    return JSONResponse(content=create_response(False, "이미지 첨부 또는 질문을 입력해주세요.", None), status_code=400)
 
   if not request.model:
     return JSONResponse(content=create_response(False, "모델을 선택해주세요.", None), status_code=400)
   
   # ChatService에서 채팅방 생성 서비스 호출
   response = await RoomService.create_room_service(db)
-
+  
+  # 유저 메시지 저장
+  data = {
+    "room_id": response["id"],
+    "content": request.content,
+    "model": request.model,
+    "images": request.images if request.images else None
+  }
+  await ChatService.send_user_message(db, ChatUserMessageType(**data))
+  
   return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)
 
 ## 채팅방 전체 조회
