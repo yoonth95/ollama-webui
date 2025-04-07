@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import Prism from "prismjs";
-import CodeBlockToolBar from "@/features/markdown/components/CodeblockToolBar";
+import { CodeBlockToolBar } from "@/features/markdown/components";
+
 interface CodeBlockPropsType {
   className?: string;
   children: React.ReactNode;
