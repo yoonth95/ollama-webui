@@ -7,6 +7,7 @@ from app.schemas.room import RoomCreateRequest, RoomRenameRequest
 from app.schemas.chat import ChatUserMessageType
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
+from app.utils.transaction import transactional
 from app.db.database import get_db
 import logging
 
@@ -17,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 ## 채팅방 생성
 @router.post("/room/create-room")
-@handle_exceptions
+@handle_exceptions # 예외 먼저 처리
+@transactional     # 이후 트랜잭션 관리
 async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_db)):
   logger.info(f"📩 클라이언트 채팅방 생성")
   
