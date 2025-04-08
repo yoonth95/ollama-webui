@@ -1,143 +1,21 @@
 import { UserChatBox, BotChatBox } from "@/features/chat/components";
-import { CustomScrollbar } from "@/shared/ui/custom-scrollbar";
+import { useGetChatMessages } from "./queries/useGetChatMessages";
 
 const ChatContainer = ({ chatRoomId }: { chatRoomId: string }) => {
-  console.log(chatRoomId);
-  const message = `
-# A demo of \`react-markdown\`
-
-\`react-markdown\` is a markdown component for React.
-
-👉 Changes are re-rendered as you type.
-
-👈 Try writing some markdown on the left.
-
-- ㅇㅇㅇ
-- ㅇㅇㅇ
-  - ㅇㅇㅇ
-
-
-## Overview
-
-* Follows [CommonMark](https://commonmark.org)
-* Optionally follows [GitHub Flavored Markdown](https://github.github.com/gfm/)
-* Renders actual React elements instead of using \`dangerouslySetInnerHTML\`
-* Lets you define your own components (to render \`MyHeading\` instead of \`'h1'\`)
-* Has a lot of plugins
-
-## Contents
-
-Here is an example of a plugin in action
-([\`remark-toc\`](https://github.com/remarkjs/remark-toc)).
-**This section is replaced by an actual table of contents**.
-
-## Syntax highlighting
-
-Here is an example of a plugin to highlight code:
-[\`rehype-starry-night\`](https://github.com/rehypejs/rehype-starry-night).
-
-\`\`\`js
-import React from 'react'
-import ReactDom from 'react-dom'
-import {MarkdownHooks} from 'react-markdown'
-import rehypeStarryNight from 'rehype-starry-night'
-
-const markdown = \`
-# Your markdown here
-\`
-
-ReactDom.render(
-  <MarkdownHooks rehypePlugins={[rehypeStarryNight]}>{markdown}</MarkdownHooks>,
-  document.querySelector('#content')
-)
-\`\`\`
-
-Pretty neat, eh?
-
-## GitHub flavored markdown (GFM)
-
-For GFM, you can *also* use a plugin:
-[\`remark-gfm\`](https://github.com/remarkjs/react-markdown#use).
-It adds support for GitHub-specific extensions to the language:
-tables, strikethrough, tasklists, and literal URLs.
-
-These features **do not work by default**.
-👆 Use the toggle above to add the plugin.
-
-| Feature    | Support              |
-| ---------: | :------------------- |
-| CommonMark | 100%                 |
-| GFM        | 100% w/ \`remark-gfm\` |
-
-~~strikethrough~~
-
-* [ ] task list
-* [x] checked item
-
-https://example.com
-
-## HTML in markdown
-
-⚠️ HTML in markdown is quite unsafe, but if you want to support it, you can
-use [\`rehype-raw\`](https://github.com/rehypejs/rehype-raw).
-You should probably combine it with
-[\`rehype-sanitize\`](https://github.com/rehypejs/rehype-sanitize).
-
-<blockquote>
-  👆 Use the toggle above to add the plugin.
-</blockquote>
-
-## Components
-
-You can pass components to change things:
-
-\`\`\`js
-import React from 'react'
-import ReactDom from 'react-dom'
-import Markdown from 'react-markdown'
-import MyFancyRule from './components/my-fancy-rule.js'
-
-const markdown = \`
-# Your markdown here
-\`
-
-ReactDom.render(
-  <Markdown
-    components={{
-      // Use h2s instead of h1s
-      h1: 'h2',
-      // Use a component instead of hrs
-      hr(props) {
-        const {node, ...rest} = props
-        return <MyFancyRule {...rest} />
-      }
-    }}
-  >
-    {markdown}
-  </Markdown>,
-  document.querySelector('#content')
-)
-\`\`\`
-
-## More info?
-
-Much more info is available in the
-[readme on GitHub](https://github.com/remarkjs/react-markdown)!
-
-***
-
-A component by [Espen Hovlandsdal](https://espen.codes/)
-`;
+  const { data: messagesResponse } = useGetChatMessages(chatRoomId);
 
   return (
-    <section className="flex w-full overflow-y-auto">
-      <CustomScrollbar className="flex justify-center">
-        <div className="flex w-full flex-col gap-4 text-base md:max-w-[42rem] md:gap-5 lg:gap-6 xl:max-w-[48rem]">
-          <UserChatBox content={message} />
-          <BotChatBox content={message} />
-          <br />
-        </div>
-      </CustomScrollbar>
+    <section className="themed-scrollbar flex w-full justify-center overflow-y-auto">
+      <div className="flex w-full flex-col gap-4 text-base md:max-w-[42rem] md:gap-5 lg:gap-6 xl:max-w-[48rem]">
+        {messagesResponse.data?.map((message) =>
+          message.role === "user" ? (
+            message.content !== "" && <UserChatBox key={message.id} content={message.content} />
+          ) : (
+            <BotChatBox key={message.id} content={message.content} />
+          ),
+        )}
+        <br />
+      </div>
     </section>
   );
 };
