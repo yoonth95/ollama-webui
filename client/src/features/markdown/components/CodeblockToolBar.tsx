@@ -20,7 +20,7 @@ const CodeBlockToolBar = ({ language, codeContent }: CodeBlockToolBarPropsType) 
   return (
     <>
       <div className="code-block-toolbar flex items-center justify-between px-5 py-2 font-sans text-xs select-none">
-        <span>{language}</span>
+        <span className="h-4">{language}</span>
       </div>
       <div className="sticky top-0 z-10">
         <div className="absolute right-0 bottom-[-5px] flex items-center">

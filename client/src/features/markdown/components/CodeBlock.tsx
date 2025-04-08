@@ -21,7 +21,7 @@ const CodeBlock = ({ className, children }: CodeBlockPropsType) => {
   return (
     <div className="relative w-full overflow-hidden rounded-lg">
       <CodeBlockToolBar language={language} codeContent={codeContent} />
-      <pre className="w-full overflow-x-auto">
+      <pre className="themed-scrollbar code-scrollbar w-full overflow-x-auto">
         <code
           ref={codeRef}
           className={
