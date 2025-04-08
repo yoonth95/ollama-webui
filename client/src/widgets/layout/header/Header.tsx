@@ -25,30 +25,30 @@ const Header = () => {
 
   return (
     <header className="flex justify-between p-2">
-      <div className="flex items-center gap-3 h-8 w-full">
+      <div className="flex h-8 w-full items-center gap-3">
         {isMobile || !open ? <SidebarActionButton /> : null}
         <DropdownMenu>
-          <div className={cn("flex-1 flex items-center", isMobile && "justify-center")}>
+          <div className={cn("flex flex-1 items-center", isMobile && "justify-center")}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" aria-label="dropdown" className="p-0 text-lg">
-                <span className="font-bold text-accent-foreground/70">
+                <span className="text-accent-foreground-70 font-bold">
                   {selectedModel ? selectedModel.model : "모델 선택"}
                 </span>
-                <ChevronDown className="text-accent-foreground/70" />
+                <ChevronDown className="text-accent-foreground-70" />
               </Button>
             </DropdownMenuTrigger>
           </div>
           <DropdownMenuContent
             className={cn(
-              "min-w-[20rem] min-h-[7.5rem] p-0",
-              isMobile && "w-[calc(100vw-1rem)] fixed left-[-24px] top-2 -translate-x-1/2 transform",
+              "min-h-[7.5rem] min-w-[20rem] p-0",
+              isMobile && "fixed top-2 left-[-24px] w-[calc(100vw-1rem)] -translate-x-1/2 transform",
             )}
             sideOffset={0}
             alignOffset={0}
             align={isMobile ? "center" : "start"}
           >
             {isLoading ? (
-              <div className="flex items-center justify-center h-[7.5rem]">
+              <div className="flex h-[7.5rem] items-center justify-center">
                 <LoaderCircle className="animate-spin" />
               </div>
             ) : (
