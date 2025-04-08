@@ -1,4 +1,11 @@
-import { useQuery, useMutation, useInfiniteQuery, InfiniteData, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useInfiniteQuery,
+  InfiniteData,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { ApiRequestBody, ApiResponse, customAxios, useErrorHandler } from "@/shared/api";
 import {
@@ -46,6 +53,45 @@ export function useCustomQuery<TRes>({
     meta: {
       errorHandled: Boolean(errorOptions && Object.keys(errorOptions).length > 0), // 에러 옵션이 제공된 경우 errorHandled를 true로 설정
       errorOptions, // 에러 옵션 전달
+    },
+    ...options,
+  });
+}
+
+// GET 요청 Suspense 모드
+/**
+ * @param queryKey 쿼리키
+ * @param endpoint API 엔드포인트
+ * @param schema 응답 데이터 검증을 위한 Zod 스키마
+ * @param errorOptions 에러 (선택 사항)
+ * @param options React Query 옵션 설정 (선택 사항)
+ * @param config axios 설정 (선택 사항)
+ * @returns 검증된 데이터와 메타데이터를 포함한 객체
+ */
+export function useCustomSuspenseQuery<TRes>({
+  queryKey,
+  endpoint,
+  schema,
+  errorOptions = { type: DisplayType.Toast },
+  options = {},
+  configs = {},
+}: UseCustomQueryType<TRes>) {
+  const { withErrorHandling } = useErrorHandler();
+
+  return useSuspenseQuery<ApiResponseType<TRes>, ApiError>({
+    queryKey,
+    queryFn: withErrorHandling(async () => {
+      const response = await customAxios(endpoint, { method: "GET", ...configs });
+
+      // 응답 데이터를 camelCase로 변환 및 검증
+      const validatedResponse = ApiResponse(schema, response.data);
+      if (!validatedResponse) throw new Error("응답 데이터 검증 실패");
+
+      return validatedResponse as ApiResponseType<TRes>;
+    }, errorOptions),
+    meta: {
+      errorHandled: Boolean(errorOptions && Object.keys(errorOptions).length > 0),
+      errorOptions,
     },
     ...options,
   });
