@@ -5,9 +5,9 @@ from app.db.crud.room import RoomCrud
 
 class RoomService:
   @staticmethod
-  async def create_room_service(db: Session) -> RoomResponse:
-    # "새 채팅"으로 기본 채팅방 생성
-    new_room = RoomCrud.create_new_room(db, RoomTitle(title="새 채팅"))
+  async def create_room_service(db: Session, commit: bool = True) -> RoomResponse:
+    """채팅방 생성"""
+    new_room = RoomCrud.create_new_room(db, RoomTitle(title="새 채팅"), commit=commit)
     
     response = RoomResponse(
       id=new_room.id,
@@ -21,6 +21,7 @@ class RoomService:
   
   @staticmethod
   async def get_rooms_service(db: Session, page: int, limit: int) -> RoomListResponse:
+    """채팅방 목록 조회"""
     result = RoomCrud.get_rooms(db, page, limit)
     return {
       "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"]],
@@ -29,8 +30,10 @@ class RoomService:
   
   @staticmethod
   async def delete_room_service(db: Session, room_id: str) -> bool:
+    """채팅방 삭제"""
     return RoomCrud.delete_room(db, room_id)
     
   @staticmethod
   async def update_room_title_service(db: Session, room_id: str, new_title: str) -> bool:
+    """채팅방 제목 수정"""
     return RoomCrud.update_room_title(db, room_id, new_title)

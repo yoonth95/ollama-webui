@@ -24,6 +24,7 @@ async def already_installed_response(model_name: str):
 class ModelService:
   @staticmethod
   async def get_models() -> ModelList:
+    """사용 가능한 모든 모델 조회"""
     async with aiohttp.ClientSession() as session:
       async with session.get(f"{settings.OLLAMA_API_BASE_URL}/api/tags") as response:                
         data = await response.json()
@@ -41,7 +42,7 @@ class ModelService:
   
   @staticmethod
   async def model_download(model_name: str, request) -> StreamingResponse:
-    ## 모델 다운로드 여부 체크
+    """모델 다운로드 스트리밍 응답 제공"""
     async with httpx.AsyncClient() as client:
       response = await client.get(f"{settings.OLLAMA_API_BASE_URL}/api/tags")
       data = response.json()
@@ -62,6 +63,7 @@ class ModelService:
   
   @staticmethod
   async def model_download_cancel(model_name: str):
+    """설치 진행 중인 모델 다운로드 취소"""
     if model_name in active_downloads:
       cancelled_downloads[model_name] = True
       return JSONResponse(content=create_response(True, "다운로드 취소", None), status_code=200)
@@ -70,6 +72,7 @@ class ModelService:
   
   @staticmethod
   async def model_delete(model_name: str):
+    """설치된 모델 삭제"""
     async with aiohttp.ClientSession() as session:
       url = f"{settings.OLLAMA_API_BASE_URL}/api/delete"
       data = {"model": model_name}

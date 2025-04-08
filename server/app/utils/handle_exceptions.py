@@ -8,6 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def handle_exceptions(func):
+  """예외 처리"""
   @wraps(func)
   async def wrapper(*args, **kwargs):
     try:
