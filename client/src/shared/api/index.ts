@@ -2,10 +2,8 @@ import { ApiResponse, ApiRequestBody } from "./apiCaseConverter";
 import { customAxios } from "./apiClient";
 import { queryKeys } from "./queryKeys";
 import { useApiError } from "./useApiError";
-import { useCustomQuery } from "./useApiQuery";
-import { useCustomMutation } from "./useApiQuery";
-import { useCustomInfiniteQuery } from "./useApiQuery";
 import { useErrorHandler } from "./useErrorHandler";
+import { useCustomQuery, useCustomMutation, useCustomInfiniteQuery, useCustomSuspenseQuery } from "./useApiQuery";
 
 export {
   ApiResponse,
@@ -13,8 +11,9 @@ export {
   customAxios,
   queryKeys,
   useApiError,
+  useErrorHandler,
   useCustomQuery,
   useCustomMutation,
   useCustomInfiniteQuery,
-  useErrorHandler,
+  useCustomSuspenseQuery,
 };
