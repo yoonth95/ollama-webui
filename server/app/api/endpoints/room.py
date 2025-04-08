@@ -7,7 +7,6 @@ from app.schemas.room import RoomCreateRequest, RoomRenameRequest
 from app.schemas.chat import ChatUserMessageType
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
-from app.utils.transaction import transactional
 from app.db.database import get_db
 import logging
 
@@ -17,8 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @router.post("/room/create-room")
-@handle_exceptions # 예외 먼저 처리
-@transactional     # 이후 트랜잭션 관리
+@handle_exceptions
 async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_db)):
   """채팅방 생성"""
   logger.info(f"📩 클라이언트 채팅방 생성")
@@ -29,20 +27,29 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
   if not request.model:
     return JSONResponse(content=create_response(False, "모델을 선택해주세요.", None), status_code=400)
   
-  # 채팅방 생성
-  response = await RoomService.create_room_service(db)
+  try:
+    db.begin()  # 트랜잭션 시작
+    
+    # 채팅방 생성 (commit=False로 설정하여 자동 커밋 방지)
+    response = await RoomService.create_room_service(db, commit=False)
+    
+    data = {
+      "room_id": response["id"],
+      "content": request.content,
+      "model": request.model,
+      "images": request.images if request.images else None
+    }
+    
+    # 유저 메시지 저장 (commit=False로 설정하여 자동 커밋 방지)
+    await ChatService.save_user_message(db, ChatUserMessageType(**data), commit=False)
+    
+    db.commit() # 커밋
+    return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)
   
-  data = {
-    "room_id": response["id"],
-    "content": request.content,
-    "model": request.model,
-    "images": request.images if request.images else None
-  }
-  
-  # 유저 메시지 저장
-  await ChatService.save_user_message(db, ChatUserMessageType(**data))
-  
-  return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)
+  except Exception as e:
+    db.rollback() # 롤백
+    logger.error(f"채팅방 생성 중 오류 발생: {e}")
+    raise # 예외를 다시 발생시켜 handle_exceptions에서 에러 처리
 
 @router.get("/room/get-rooms")
 @handle_exceptions
