@@ -1,24 +1,24 @@
 from pydantic import BaseModel
-from typing import List, Optional, Literal
-
-# class ChatMessage(BaseModel):
-#   role: Literal["system", "user", "assistant"]
-#   content: str
-
-# class ChatRequest(BaseModel):
-#   model: str
-#   message: str
-
-# class ChatHistory(BaseModel):
-#   messages: List[ChatMessage]
-
-# class ChatResponse(BaseModel):
-#   success: bool
-#   message: str
-#   data: Optional[ChatMessage]
+from datetime import datetime
+from typing import List, Optional
+from app.schemas.base import TimeModelMixin
   
 class ChatUserMessageType(BaseModel):
   room_id: str
   model: str
   content: str
   images: Optional[List[str]] = None
+
+class ChatHistoryResponseType(TimeModelMixin):
+  id: str
+  room_id: str
+  role: str
+  model: str
+  content: str
+  images: Optional[List[str]] = None
+  created_at: datetime
+  updated_at: datetime
+
+  model_config = {
+    "from_attributes": True
+  }

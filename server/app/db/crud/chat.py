@@ -24,3 +24,15 @@ class ChatCrud:
       db.refresh(new_message)
       
     return new_message
+
+  @staticmethod
+  def get_chatting_history(db: Session, room_id: str):
+    """채팅방 조회"""
+    
+    return (
+      db.query(ChatMessage)
+      .filter(ChatMessage.room_id == room_id)
+      .order_by(ChatMessage.created_at.desc())
+      .all()
+    )
+
