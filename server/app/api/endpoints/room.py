@@ -40,7 +40,7 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
   }
   
   # 유저 메시지 저장
-  await ChatService.send_user_message(db, ChatUserMessageType(**data))
+  await ChatService.save_user_message(db, ChatUserMessageType(**data))
   
   return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)
 

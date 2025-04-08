@@ -4,7 +4,7 @@ from app.schemas.chat import ChatUserMessageType
 
 class ChatCrud:
   @staticmethod
-  def send_user_message(db: Session, user_message: ChatUserMessageType, commit: bool = True):
+  def save_user_message(db: Session, user_message: ChatUserMessageType, commit: bool = True):
     """유저 메시지 저장"""
     message_data = {
       "room_id": user_message.room_id,
