@@ -21,6 +21,7 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
+  --accent-foreground-70: oklch(0.205 0 0 / 70%);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -69,6 +70,7 @@
 
   --accent: oklch(0.269 0 0); /* className: neutral-800 | hex: #262626 */
   --accent-foreground: oklch(0.985 0 0); /* className: neutral-50 | hex: #fafafa */
+  --accent-foreground-70: oklch(0.985 0 0 / 70%);
 
   --destructive: oklch(0.704 0.191 22.216); /* red | hex: #ff6467 */
 
@@ -116,6 +118,7 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-foreground-70: var(--accent-foreground-70);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -151,7 +154,19 @@
     height: 10px;
   }
   .themed-scrollbar {
+    scrollbar-width: thin;
     scrollbar-color: var(--color-muted-foreground) var(--color-sidebar);
+  }
+
+  /* 코드블럭 가로 스크롤바 크기 조정 */
+  .code-scrollbar::-webkit-scrollbar {
+    height: 6px !important;
+  }
+
+  /* Firefox 스크롤바 지원 */
+  .code-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ring) var(--color-sidebar);
   }
 
   /* 스크롤바 숨기기 */
