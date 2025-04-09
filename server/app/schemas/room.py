@@ -2,11 +2,12 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
 from app.schemas.base import TimeModelMixin
+from app.schemas.chat import ImageData
 
 class RoomCreateRequest(BaseModel):
   model: str
   content: str
-  images: Optional[List[str]] = None
+  images: Optional[List[ImageData]] = None
   
 class RoomRenameRequest(BaseModel):
   room_id: str

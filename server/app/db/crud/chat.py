@@ -14,7 +14,7 @@ class ChatCrud:
     }
     
     if user_message.images is not None:
-      message_data["images"] = user_message.images
+      message_data["images"] = [img.model_dump() for img in user_message.images]
     
     new_message = ChatMessage(**message_data)
     db.add(new_message)
