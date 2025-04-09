@@ -12,6 +12,9 @@ class RoomCrud:
     if commit:
       db.commit()
       db.refresh(new_room)
+    else:
+      db.flush()
+      db.refresh(new_room)
       
     return new_room
 

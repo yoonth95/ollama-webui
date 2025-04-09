@@ -33,6 +33,11 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
     # 채팅방 생성 (commit=False로 설정하여 자동 커밋 방지)
     response = await RoomService.create_room_service(db, commit=False)
     
+    if not response:
+      db.rollback()
+      logger.error("채팅방 생성 실패: 빈 응답")
+      return JSONResponse(content=create_response(False, "채팅방 생성 실패", None), status_code=500)
+    
     data = {
       "room_id": response["id"],
       "content": request.content,
