@@ -9,7 +9,7 @@ const ChatContainer = ({ chatRoomId }: { chatRoomId: string }) => {
       <div className="flex w-full flex-col gap-4 text-base md:max-w-[42rem] md:gap-5 lg:gap-6 xl:max-w-[48rem]">
         {messagesResponse.data?.map((message) =>
           message.role === "user" ? (
-            message.content !== "" && <UserChatBox key={message.id} content={message.content} />
+            <UserChatBox key={message.id} content={message.content} images={message.images ?? []} />
           ) : (
             <BotChatBox key={message.id} content={message.content} />
           ),
