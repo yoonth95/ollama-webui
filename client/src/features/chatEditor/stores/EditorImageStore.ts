@@ -1,19 +1,21 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { isValidImageType } from "@/features/chatEditor/utils/imageUtil";
+import { ImageDataType } from "@/shared/types/chatMessageType";
 
 export interface ImageItemType {
   id: string;
   url: string;
   file: File;
+  mimeType: string;
 }
 
 interface EditorImageState {
   images: ImageItemType[];
-  addImage: (image: Omit<ImageItemType, "id">) => { success: boolean; error?: string };
+  addImage: (image: Omit<ImageItemType, "id" | "mimeType">) => { success: boolean; error?: string };
   removeImage: (id: string) => void;
   clearImages: () => void;
-  getImages: () => Promise<string[]>;
+  getImages: () => Promise<ImageDataType[]>;
 }
 
 // 이미지 고유 ID 생성
@@ -57,7 +59,14 @@ export const useEditorImageStore = create<EditorImageState>()(
 
         set(
           (state) => ({
-            images: [...state.images, { ...image, id: generateId() }],
+            images: [
+              ...state.images,
+              {
+                ...image,
+                id: generateId(),
+                mimeType: image.file.type,
+              },
+            ],
           }),
           false,
           "addImage",
@@ -96,16 +105,20 @@ export const useEditorImageStore = create<EditorImageState>()(
         set({ images: [] }, false, "clearImages");
       },
 
-      // 현재 이미지 리스트에서 base64로 인코딩된 이미지 리스트 반환
+      // 현재 이미지 리스트에서 {id, data, mimeType} 객체 리스트 반환
       getImages: async () => {
         const images = get().images;
-        const base64DataList = await Promise.all(
+        const imageDataList = await Promise.all(
           images.map(async (image) => {
             const { data } = await fileToBase64(image.file);
-            return data;
+            return {
+              id: image.id,
+              data,
+              mimeType: image.mimeType,
+            };
           }),
         );
-        return base64DataList;
+        return imageDataList;
       },
     }),
     { name: "editor-image-store" },

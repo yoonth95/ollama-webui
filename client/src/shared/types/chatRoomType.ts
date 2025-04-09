@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ImageDataSchema } from "@/shared/types/chatMessageType";
 
 export const ChatRoomSchema = z.object({
   id: z.string(),
@@ -12,7 +13,7 @@ export const ChatRoomArraySchema = z.array(ChatRoomSchema);
 export const CreateChatRoomRequestSchema = z.object({
   content: z.string(),
   model: z.string(),
-  images: z.array(z.string()).optional(),
+  images: z.array(ImageDataSchema).optional(),
 });
 
 export const UpdateChatRoomTitleRequestSchema = z.object({
