@@ -8,12 +8,17 @@ from app.schemas.chat import ChatUserMessageType
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
 from app.db.database import get_db
+from app.core.config import settings
+from app.utils.memory_pubsub import memory_pubsub
+import asyncio
 import logging
 
 router = APIRouter()
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# 인메모리 PubSub 클라이언트
+pubsub_client = memory_pubsub
 
 @router.post("/room/create-room")
 @handle_exceptions
@@ -38,17 +43,32 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
       logger.error("채팅방 생성 실패: 빈 응답")
       return JSONResponse(content=create_response(False, "채팅방 생성 실패", None), status_code=500)
     
-    data = {
+    user_message = {
       "room_id": response["id"],
       "content": request.content,
       "model": request.model,
-      "images": request.images if request.images else None
     }
+    ollama_request = {
+      "model": request.model,
+      "messages": [
+        {
+          "role": "user",
+          "content": request.content
+        }
+      ]
+    }
+    if request.images:
+      user_message["images"] = request.images
+      ollama_request["messages"][0]["images"] = request.images
     
     # 유저 메시지 저장 (commit=False로 설정하여 자동 커밋 방지)
-    await ChatService.save_user_message(db, ChatUserMessageType(**data), commit=False)
+    await ChatService.save_user_message(db, ChatUserMessageType(**user_message), commit=False)
     
     db.commit() # 커밋
+    
+    # 백그라운드 태스크로 실행하여 API 응답을 기다리지 않고 바로 반환
+    asyncio.create_task(ChatService.generate_ollama_answer(response["id"], ollama_request))
+    
     return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)
   
   except Exception as e:
