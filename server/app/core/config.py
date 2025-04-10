@@ -8,6 +8,9 @@ class Settings(BaseSettings):
   
   DATABASE_URL: str = "sqlite:///./database.db"
   
+  # 메모리 PubSub 설정
+  MEMORY_PUBSUB_ENABLED: bool = True
+  
   HOST: str = "http://localhost"
   PORT: int = 8000
   

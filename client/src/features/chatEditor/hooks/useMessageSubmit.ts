@@ -1,5 +1,5 @@
 import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import useCreateChatRoom from "@/features/chatEditor/queries/useCreateChatRoom";
 import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
@@ -8,7 +8,6 @@ import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 const TOAST_ID = "model-select-toast";
 
 export const useMessageSubmit = (editorRef: React.RefObject<TiptapEditorRef | null> | undefined) => {
-  const navigate = useNavigate();
   const { chatRoomId } = useParams<{ chatRoomId?: string }>();
 
   const selectedModel = useModelSelectStore((state) => state.selectedModel);
@@ -40,14 +39,12 @@ export const useMessageSubmit = (editorRef: React.RefObject<TiptapEditorRef | nu
     const body =
       images.length > 0 ? { model: selectedModel.model, content, images } : { model: selectedModel.model, content };
 
+    // 홈 페이지에서 채팅 입력
     if (!chatRoomId) {
-      createChatRoom(body, {
-        onSuccess: (data) => {
-          navigate(`/chat/${data.data?.id}`);
-          clearImages();
-        },
-      });
-    } else {
+      createChatRoom(body);
+    }
+    // 채팅방 페이지에서 채팅 입력
+    else {
       console.log("채팅방에서 메시지 입력");
       clearImages();
     }
