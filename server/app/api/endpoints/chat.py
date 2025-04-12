@@ -1,6 +1,6 @@
 import asyncio
 import json
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Body
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.utils.memory_pubsub import memory_pubsub
 import logging
 from datetime import datetime
+from app.schemas.chat import ChatUserMessageType
 
 router = APIRouter()
 
@@ -21,11 +22,14 @@ logger = logging.getLogger(__name__)
 # 인메모리 PubSub 클라이언트
 pubsub_client = memory_pubsub
 
+# SSE 연결 제한 시간 (초)
+SSE_TIMEOUT = 60 * 30  # 30분
+
 @router.get("/chat/{room_id}")
 @handle_exceptions
 async def get_chatting_history(room_id: str, db: Session = Depends(get_db)):
   """채팅방 조회"""
-  logger.info(f"📩 클라이언트 채팅방 조회")
+  logger.info(f"📩 클라이언트 채팅방 조회: {room_id}")
   
   response = await ChatService.get_chatting_history(db, room_id)
 
@@ -33,6 +37,85 @@ async def get_chatting_history(room_id: str, db: Session = Depends(get_db)):
     return JSONResponse(content=create_response(False, "존재하지 않는 채팅방입니다.", None), status_code=404)
 
   return JSONResponse(content=create_response(True, "채팅 내역 조회", response), status_code=200)
+
+@router.post("/chat/message/{room_id}")
+@handle_exceptions
+async def send_message(room_id: str, message: dict = Body(...), db: Session = Depends(get_db)):
+  """기존 채팅방에 메시지 전송"""
+  logger.info(f"📩 클라이언트 메시지 전송: {room_id}")
+  
+  # 채팅방 존재 여부 확인
+  chat_history = await ChatService.get_chatting_history(db, room_id)
+  if not chat_history:
+    return JSONResponse(content=create_response(False, "존재하지 않는 채팅방입니다.", None), status_code=404)
+  
+  try:
+    # 트랜잭션 시작
+    db.begin()
+    
+    # 메시지 유효성 검사
+    if not message.get("content") and not message.get("images"):
+      return JSONResponse(content=create_response(False, "이미지 첨부 또는 질문을 입력해주세요.", None), status_code=400)
+    
+    if not message.get("model"):
+      return JSONResponse(content=create_response(False, "모델을 선택해주세요.", None), status_code=400)
+    
+    # 유저 메시지 생성
+    user_message = ChatUserMessageType(
+      room_id=room_id,
+      content=message.get("content", ""),
+      model=message.get("model"),
+      images=message.get("images")
+    )
+    
+    # 유저 메시지 저장
+    await ChatService.save_user_message(db, user_message)
+    
+    # ollama 요청 구성
+    ollama_request = {
+      "model": message.get("model"),
+      "messages": [
+        {
+          "role": "user",
+          "content": message.get("content", "")
+        }
+      ]
+    }
+    
+    # 이미지 추가
+    if message.get("images"):
+      ollama_request["messages"][0]["images"] = message.get("images")
+    
+    # 이전 대화 기록도 포함 (컨텍스트 제공)
+    # 최근 5턴의 대화만 포함
+    chat_context = []
+    for i, msg in enumerate(chat_history):
+      if i >= max(0, len(chat_history) - 10):  # 최대 10개 메시지
+        chat_context.append({
+          "role": msg["role"],
+          "content": msg["content"]
+        })
+    
+    if chat_context:
+      # 컨텍스트 추가 (마지막 메시지는 제외하고 앞에 추가)
+      ollama_request["messages"] = chat_context + ollama_request["messages"]
+    
+    # 커밋
+    db.commit()
+    
+    # 비동기로 Ollama 요청 실행
+    asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request))
+    
+    return JSONResponse(content=create_response(True, "메시지 전송 완료", {"room_id": room_id}), status_code=200)
+    
+  except Exception as e:
+    # 롤백
+    db.rollback()
+    logger.error(f"메시지 전송 중 오류 발생: {e}")
+    return JSONResponse(
+      content=create_response(False, f"메시지 전송 중 오류가 발생했습니다: {str(e)}", None), 
+      status_code=500
+    )
 
 @router.get("/chat/stream/{room_id}")
 async def stream_chat(room_id: str, request: Request):
@@ -42,14 +125,24 @@ async def stream_chat(room_id: str, request: Request):
   async def event_generator():
     # PubSub 인터페이스 생성
     client = pubsub_client.pubsub()
+    connection_time = datetime.now()
     
     # 메타데이터 조회를 위한 변수
     model_name = None
     created_at = None
+    last_activity = datetime.now().timestamp()
+    last_ping_time = datetime.now().timestamp()
     
     try:
       # chat:{room_id} 채널 구독
       client.subscribe(f"chat:{room_id}")
+      
+      # 초기 연결 알림 메시지 전송
+      yield {
+        "event": "connected",
+        "id": "connection-init",
+        "data": json.dumps({"status": "connected", "room_id": room_id})
+      }
       
       # 이미 저장된 답변이 있는지 확인
       saved_answer = pubsub_client.get(f"answer:{room_id}")
@@ -61,8 +154,8 @@ async def stream_chat(room_id: str, request: Request):
           metadata_dict = json.loads(metadata.decode('utf-8') if isinstance(metadata, bytes) else metadata)
           model_name = metadata_dict.get("model")
           created_at = metadata_dict.get("created_at")
-        except:
-          pass
+        except Exception as e:
+          logger.warning(f"메타데이터 파싱 오류: {e}")
       
       if saved_answer:
         # 이미 저장된 답변이 있으면 클라이언트에 전송
@@ -74,6 +167,8 @@ async def stream_chat(room_id: str, request: Request):
           "created_at": created_at or datetime.now().isoformat()
         }
         
+        last_activity = datetime.now().timestamp()
+        
         yield {
           "event": "message",
           "id": "init",
@@ -82,9 +177,28 @@ async def stream_chat(room_id: str, request: Request):
       
       # 실시간 메시지 구독
       while True:
+        # 연결 시간 제한 확인 (30분)
+        if (datetime.now() - connection_time).total_seconds() > SSE_TIMEOUT:
+          logger.info(f"SSE 연결 제한 시간 초과: {room_id}")
+          yield {
+            "event": "timeout",
+            "data": json.dumps({"timeout": True, "message": "연결 제한 시간이 초과되었습니다."})
+          }
+          break
+          
+        # 클라이언트 연결 종료 확인
         if await request.is_disconnected():
           logger.info(f"📤 클라이언트 연결 종료: {room_id}")
           break
+        
+        # 주기적으로 ping 메시지 전송 (15초마다)
+        now = datetime.now().timestamp()
+        if now - last_ping_time > 15:
+          last_ping_time = now
+          yield {
+            "event": "ping",
+            "data": json.dumps({"time": now})
+          }
           
         # 비동기적으로 메시지 가져오기 (타임아웃 0.1초)
         message = await client.get_message(ignore_subscribe_messages=True, timeout=0.1)
@@ -97,26 +211,59 @@ async def stream_chat(room_id: str, request: Request):
               metadata_dict = json.loads(metadata.decode('utf-8') if isinstance(metadata, bytes) else metadata)
               model_name = metadata_dict.get("model")
               created_at = metadata_dict.get("created_at")
-            except:
-              pass
+            except Exception as e:
+              logger.warning(f"메타데이터 파싱 오류: {e}")
         
         if message and message["type"] == "message":
+          # 활동 시간 업데이트
+          last_activity = datetime.now().timestamp()
+          
           data = message["data"].decode("utf-8") if isinstance(message["data"], bytes) else message["data"]
           
-          # 기존 데이터에 메타데이터 추가
+          # 메시지 데이터 파싱 시도
           try:
             message_data = json.loads(data)
+            
+            # 오류 메시지 처리
+            if message_data.get("error"):
+              logger.error(f"스트리밍 오류 메시지: {message_data}")
+              yield {
+                "event": "error",
+                "data": data
+              }
+              # 에러 발생 시 잠시 대기 후 연결 계속 유지
+              await asyncio.sleep(1)
+              continue
+            
+            # 완료 메시지 확인
+            if message_data.get("done"):
+              logger.info(f"스트리밍 응답 완료: {room_id}")
+            
+            # 메타데이터 추가
             message_data["model"] = model_name
             message_data["created_at"] = created_at or datetime.now().isoformat()
             data = json.dumps(message_data)
-          except:
-            pass
             
+            yield {
+              "event": "message",
+              "id": room_id,
+              "data": data
+            }
+          except json.JSONDecodeError as e:
+            logger.error(f"메시지 데이터 파싱 오류: {e}")
+            yield {
+              "event": "error",
+              "data": json.dumps({"error": True, "message": "메시지 데이터 처리 중 오류가 발생했습니다."})
+            }
+        
+        # 장시간 활동이 없을 경우 (5분) 연결 종료
+        if datetime.now().timestamp() - last_activity > 300:
+          logger.info(f"SSE 연결 비활성 종료: {room_id}")
           yield {
-            "event": "message",
-            "id": room_id,
-            "data": data
+            "event": "inactive",
+            "data": json.dumps({"inactive": True, "message": "장시간 활동이 없어 연결이 종료되었습니다."})
           }
+          break
         
         # 짧은 대기 시간 후 다시 확인
         await asyncio.sleep(0.01)
@@ -128,8 +275,11 @@ async def stream_chat(room_id: str, request: Request):
       }
     finally:
       # 연결 종료 시 정리
-      client.unsubscribe(f"chat:{room_id}")
-      client.close()
+      try:
+        client.unsubscribe(f"chat:{room_id}")
+        client.close()
+      except Exception as e:
+        logger.warning(f"연결 종료 중 오류: {e}")
       logger.info(f"📤 SSE 연결 종료: {room_id}")
   
   return EventSourceResponse(event_generator())
@@ -159,6 +309,9 @@ async def retry_chat(room_id: str, db: Session = Depends(get_db)):
   # 인메모리 데이터 초기화
   pubsub_client.delete(f"answer:{room_id}")
   
+  # 채널의 기존 메시지 정리
+  pubsub_client.clear_channel(f"chat:{room_id}")
+  
   # 올라마 요청 재구성
   ollama_request = {
     "model": last_user_message["model"],
@@ -174,10 +327,23 @@ async def retry_chat(room_id: str, db: Session = Depends(get_db)):
   if "images" in last_user_message and last_user_message["images"]:
     ollama_request["messages"][0]["images"] = last_user_message["images"]
   
+  # 이전 대화 기록도 포함 (컨텍스트 제공)
+  chat_context = []
+  for i, msg in enumerate(chat_history[:-1]):  # 마지막 메시지 제외
+    if i >= len(chat_history) - 10:  # 최대 5턴(10개 메시지)만 포함
+      chat_context.append({
+        "role": msg["role"],
+        "content": msg["content"]
+      })
+  
+  if chat_context:
+    # 컨텍스트 추가
+    ollama_request["messages"] = chat_context + ollama_request["messages"]
+  
   # 어시스턴트 메시지가 이미 있으면, DB에서 삭제
   if assistant_messages and len(assistant_messages) > 0:
     last_assistant_message = assistant_messages[-1]
-    # DB에서 답변 메시지 삭제 로직 추가 필요
+    # DB에서 답변 메시지 삭제
     await ChatService.delete_assistant_message(db, last_assistant_message["id"])
   
   # 비동기로 새 Ollama 요청 실행
