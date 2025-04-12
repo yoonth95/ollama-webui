@@ -3,6 +3,7 @@ import json
 from typing import Dict, List, Any, Optional, Set, Callable
 import threading
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ class AsyncInMemoryPubSub:
     self._channels: Dict[str, asyncio.Queue] = {}
     # 각 채널별 구독자 목록
     self._subscribers: Dict[str, Set[str]] = {}
+    # 키 만료 시간 저장
+    self._expiry: Dict[str, float] = {}
     # 스레드 안전성을 위한 락
     self._storage_lock = threading.Lock()
     
@@ -42,19 +45,37 @@ class AsyncInMemoryPubSub:
     except RuntimeError:
       self._loop = asyncio.new_event_loop()
       asyncio.set_event_loop(self._loop)
+    
+    # 만료된 키 정리 작업 시작
+    asyncio.create_task(self._cleanup_expired_keys())
         
     self._initialized = True
     logger.info("AsyncInMemoryPubSub 초기화 완료")
   
-  def set(self, key: str, value: Any) -> bool:
-    """키-값 저장 (Redis set 호환)"""
+  def set(self, key: str, value: Any, expire: int = None) -> bool:
+    """키-값 저장 (Redis set 호환), expire는 초 단위"""
     with self._storage_lock:
       self._storage[key] = value
+      
+      # 만료 시간 설정
+      if expire is not None:
+        self._expiry[key] = time.time() + expire
+      elif key in self._expiry:
+        # 만료 시간이 설정되어 있지만 업데이트 시 만료 삭제
+        del self._expiry[key]
+        
       return True
   
   def get(self, key: str) -> Any:
     """키-값 조회 (Redis get 호환)"""
     with self._storage_lock:
+      # 만료 확인
+      if key in self._expiry and time.time() > self._expiry[key]:
+        # 만료된 키 삭제
+        del self._storage[key]
+        del self._expiry[key]
+        return None
+        
       if key in self._storage:
         # 바이트 객체로 반환 (Redis와 동일하게)
         if isinstance(self._storage[key], str):
@@ -67,8 +88,18 @@ class AsyncInMemoryPubSub:
     with self._storage_lock:
       if key in self._storage:
         del self._storage[key]
+        if key in self._expiry:
+          del self._expiry[key]
         return True
       return False
+  
+  def clear_channel(self, channel: str) -> bool:
+    """채널의 모든 메시지 제거"""
+    if channel in self._channels:
+      # 새 큐로 교체 (기존 큐의 모든 메시지 제거)
+      self._channels[channel] = asyncio.Queue()
+      return True
+    return False
   
   async def publish(self, channel: str, message: Any) -> int:
     """채널에 메시지 발행 (Redis publish 호환)"""
@@ -85,7 +116,8 @@ class AsyncInMemoryPubSub:
     await self._channels[channel].put({
       "type": "message",
       "channel": channel.encode('utf-8') if isinstance(channel, str) else channel,
-      "data": message_data.encode('utf-8') if isinstance(message_data, str) else message_data
+      "data": message_data.encode('utf-8') if isinstance(message_data, str) else message_data,
+      "timestamp": time.time()
     })
     
     # 구독자 수 반환
@@ -96,6 +128,29 @@ class AsyncInMemoryPubSub:
   def pubsub(self):
     """PubSub 인터페이스 반환 (Redis pubsub 호환)"""
     return AsyncInMemoryPubSubClient(self)
+    
+  async def _cleanup_expired_keys(self):
+    """백그라운드 작업: 만료된 키 정리"""
+    while True:
+      try:
+        with self._storage_lock:
+          current_time = time.time()
+          # 만료된 키 찾기
+          expired_keys = [k for k, exp_time in self._expiry.items() if current_time > exp_time]
+          
+          # 만료된 키 삭제
+          for key in expired_keys:
+            if key in self._storage:
+              del self._storage[key]
+            del self._expiry[key]
+            
+          if expired_keys:
+            logger.debug(f"{len(expired_keys)}개의 만료된 키 정리됨")
+      except Exception as e:
+        logger.error(f"키 정리 중 오류: {str(e)}")
+      
+      # 30초마다 실행
+      await asyncio.sleep(30)
 
 
 class AsyncInMemoryPubSubClient:
@@ -106,6 +161,7 @@ class AsyncInMemoryPubSubClient:
     self.parent = parent
     self._subscribed_channels: Set[str] = set()
     self._client_id = f"client_{id(self)}"
+    self._last_active = time.time()
   
   def subscribe(self, *channels):
     """채널 구독 (Redis subscribe 호환)"""
@@ -121,6 +177,9 @@ class AsyncInMemoryPubSubClient:
       
       # 구독 채널 목록에 추가
       self._subscribed_channels.add(channel)
+      
+      # 활성 시간 업데이트
+      self._last_active = time.time()
             
     logger.debug(f"채널 구독: {channels}")
   
@@ -140,6 +199,8 @@ class AsyncInMemoryPubSubClient:
         if not self.parent._subscribers[channel]:
           del self.parent._subscribers[channel]
       
+    # 활성 시간 업데이트
+    self._last_active = time.time()
     logger.debug(f"채널 구독 취소: {channels}")
   
   async def get_message(self, ignore_subscribe_messages=True, timeout=0.01) -> Optional[Dict]:
@@ -151,6 +212,9 @@ class AsyncInMemoryPubSubClient:
     # 구독한 채널이 없으면 None 반환
     if not self._subscribed_channels:
       return None
+    
+    # 활성 시간 업데이트
+    self._last_active = time.time()
         
     # 모든 구독 채널 확인
     for channel in list(self._subscribed_channels):
@@ -179,6 +243,10 @@ class AsyncInMemoryPubSubClient:
     """연결 종료 - 모든 구독 취소 (Redis close 호환)"""
     self.unsubscribe(*list(self._subscribed_channels))
     logger.debug(f"PubSub 클라이언트 종료: {self._client_id}")
+  
+  def get_last_active(self) -> float:
+    """마지막 활성 시간 반환"""
+    return self._last_active
 
 
 # 싱글톤 인스턴스 생성
