@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { queryKeys, useCustomMutation } from "@/shared/api";
 import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
-import { useChatUIStore } from "@/shared/stores/useChatUIStore";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { ImageDataType } from "@/shared/types/chatMessageType";
 import {
   ChatRoomSchema,
@@ -12,8 +13,9 @@ import {
 
 const useCreateChatRoom = () => {
   const navigate = useNavigate();
-  const { clearImages } = useEditorImageStore();
-  const { setPendingMessage, activateOptimisticUI, setPendingChatRoomId } = useChatUIStore();
+  const clearImages = useEditorImageStore((state) => state.clearImages);
+  const { activateOptimisticUI, deactivateOptimisticUI, setUserChatData, clearUserChatData, setLoading } =
+    useChatOptimisticStore();
 
   return useCustomMutation<ChatRoomType, CreateChatRoomRequestType>({
     endpoint: `/room/create-room`,
@@ -36,15 +38,27 @@ const useCreateChatRoom = () => {
           images = variable.data.images || [];
         }
 
-        setPendingMessage(content, images);
+        // UI 업데이트
         activateOptimisticUI();
+        setUserChatData({
+          content,
+          images,
+        });
       },
       onSuccess: (data) => {
         if (data.data?.id) {
-          setPendingChatRoomId(data.data.id);
-          navigate(`/chat/${data.data.id}`);
           clearImages();
+          setLoading(false);
+
+          // 홈 페이지에서 채팅방 이동
+          navigate(`/chat/${data.data.id}`);
         }
+      },
+      onError: (error) => {
+        console.error("채팅방 생성 오류:", error);
+        toast.error("채팅방을 생성하는 중 오류가 발생했습니다.");
+        clearUserChatData();
+        deactivateOptimisticUI();
       },
     },
   });
