@@ -1,37 +1,23 @@
-import { useEffect } from "react";
-import { UserChatBox, BotChatLayout, ChatMessageSkeleton } from "@/features/chat/components";
-import { useGetChatMessages } from "@/features/chat/queries/useGetChatMessages";
-import { useChatUIStore } from "@/shared/stores/useChatUIStore";
+import { ChatOptimisticUI } from "@/features/chat/components";
+import ChatMessageList from "@/features/chat/components/ChatMessageList";
 
-const ChatContainer = ({ chatRoomId }: { chatRoomId: string }) => {
-  const { data: messagesResponse, isLoading } = useGetChatMessages(chatRoomId);
-  const { deactivateOptimisticUI } = useChatUIStore();
+interface ChatContainerPropsType {
+  isHome: boolean;
+  chatRoomId: string;
+}
 
-  // 일반 ChatContainer가 마운트되면 Optimistic UI 상태 초기화
-  useEffect(() => {
-    deactivateOptimisticUI();
-  }, [deactivateOptimisticUI]);
-
+/**
+ * 채팅 컨테이너 컴포넌트
+ * - 홈 페이지: ChatOptimisticUI 표시
+ * - 채팅방 페이지: ChatMessageList 표시
+ */
+const ChatContainer = ({ isHome, chatRoomId }: ChatContainerPropsType) => {
   return (
     <section className="themed-scrollbar flex w-full justify-center overflow-y-auto">
-      <div className="flex w-full flex-col gap-4 text-base md:max-w-[42rem] md:gap-5 lg:gap-6 xl:max-w-[48rem]">
-        {isLoading ? (
-          <ChatMessageSkeleton />
-        ) : (
-          messagesResponse?.data?.map((message) =>
-            message.role === "user" ? (
-              <UserChatBox key={message.id} content={message.content} images={message.images ?? []} />
-            ) : (
-              <BotChatLayout
-                key={message.id}
-                content={message.content}
-                modelName={message.model}
-                createdAt={message.createdAt}
-              />
-            ),
-          )
-        )}
-        <br />
+      <div className="flex w-full flex-col px-3 text-base md:max-w-[42rem] xl:max-w-[48rem]">
+        {isHome ? <ChatOptimisticUI /> : <ChatMessageList chatRoomId={chatRoomId} />}
+
+        {/* 이후 채팅 메시지 데이터 추가 */}
       </div>
     </section>
   );
