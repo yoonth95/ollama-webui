@@ -177,4 +177,11 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .user-message {
+    @apply py-5;
+  }
+  .bot-message {
+    @apply py-5;
+  }
 }
