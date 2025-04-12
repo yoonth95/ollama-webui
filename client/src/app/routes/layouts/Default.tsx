@@ -6,12 +6,12 @@ import AppSidebar from "@/widgets/layout/sidebar/AppSidebar";
 import Header from "@/widgets/layout/header/Header";
 import { MainDropzone } from "@/features/dropzone/MainDropzone";
 import { useLocationChange } from "@/shared/hooks/useLocationChange";
-import { useChatUIStore } from "@/shared/stores/useChatUIStore";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 
 export default function DefaultLayout() {
   const [cookies] = useCookies(["sidebar"]);
   const defaultOpen = cookies?.sidebar === true;
-  const { deactivateOptimisticUI } = useChatUIStore();
+  const deactivateOptimisticUI = useChatOptimisticStore((state) => state.deactivateOptimisticUI);
 
   // 경로 변경 감지 콜백
   const handleRouteChange = useCallback(
