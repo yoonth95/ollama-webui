@@ -22,7 +22,7 @@ const BotChatLayout = ({ content, modelName, createdAt }: BotChatLayoutProps) =>
 
   return (
     <article className="bot-message group flex w-full justify-start">
-      <div className="w-full max-w-full px-3">
+      <div className="w-full max-w-full">
         <div className="text-accent-foreground-70 mb-2 flex items-center gap-3">
           {modelName && <span className="font-medium">{modelName}</span>}
           {createdAt && (
