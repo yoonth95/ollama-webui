@@ -2,6 +2,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
 import { BotThinkingBox } from "@/features/chat/components";
+import useThinkContent from "@/features/chat/hooks/useThinkContent";
 
 interface BotChatLayoutProps {
   content: string;
@@ -10,15 +11,7 @@ interface BotChatLayoutProps {
 }
 
 const BotChatLayout = ({ content, modelName, createdAt }: BotChatLayoutProps) => {
-  let thinkContent = "";
-  let mainContent = content;
-
-  // <think></think> 태그 파싱
-  const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/);
-  if (thinkMatch && thinkMatch[1]) {
-    thinkContent = thinkMatch[1].trim();
-    mainContent = content.replace(/<think>[\s\S]*?<\/think>/, "").trim();
-  }
+  const { thinkContent, mainContent, isThinking } = useThinkContent(content);
 
   return (
     <article className="bot-message group flex w-full justify-start">
@@ -34,10 +27,10 @@ const BotChatLayout = ({ content, modelName, createdAt }: BotChatLayoutProps) =>
           )}
         </div>
 
-        {/* 생각 콘텐츠 */}
-        {thinkContent && <BotThinkingBox content={thinkContent} />}
+        {/* 생각 과정 표시 */}
+        {isThinking && thinkContent && <BotThinkingBox content={thinkContent} />}
 
-        {/* 메인 콘텐츠 */}
+        {/* 본문 내용 */}
         <div className="px-2 py-2 break-words">
           <MarkdownViewer content={mainContent} />
         </div>
