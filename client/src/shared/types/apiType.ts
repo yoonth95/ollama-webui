@@ -29,21 +29,18 @@ export type UseCustomQueryType<TRes> = {
 };
 
 // useMutation 타입
-export type UseCustomMutationType<TRes = undefined, TReq = undefined> = {
-  endpoint: string | ((params?: Record<string, string | number>) => string);
+export type UseCustomMutationType<TRes = undefined, TReq = undefined, TParams = Record<string, string | number>> = {
+  endpoint: string | ((params?: TParams) => string);
   method: "POST" | "PUT" | "DELETE" | "PATCH";
   responseSchema?: z.ZodType<TRes>;
   requestSchema?: z.ZodType<TReq>;
+  paramsSchema?: z.ZodType<TParams>;
   errorOptions?: ErrorHandlingOptions;
   showToastOnSuccess?: boolean;
   queryKeyToInvalidate?: string[];
   configs?: Omit<AxiosRequestConfig, "method" | "data">;
   options?: Omit<
-    UseMutationOptions<
-      ApiResponseType<TRes>,
-      ApiError,
-      { data?: TReq; params?: Record<string, string | number> } | TReq | undefined
-    >,
+    UseMutationOptions<ApiResponseType<TRes>, ApiError, { data?: TReq; params?: TParams } | TReq | undefined>,
     "mutationFn"
   >;
 };

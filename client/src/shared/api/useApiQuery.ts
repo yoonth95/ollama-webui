@@ -7,7 +7,7 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { toast } from "react-toastify";
-import { ApiRequestBody, ApiResponse, customAxios, useErrorHandler } from "@/shared/api";
+import { ApiRequestBody, ApiResponse, ApiRequestParams, customAxios, useErrorHandler } from "@/shared/api";
 import {
   DisplayType,
   ApiResponseType,
@@ -103,23 +103,25 @@ export function useCustomSuspenseQuery<TRes>({
  * @param method HTTP 메소드
  * @param responseSchema Zod 검증 스키마 (응답 데이터 검증용) (선택 사항)
  * @param requestSchema Zod 검증 스키마 (요청 데이터 검증용) (선택 사항)
+ * @param paramsSchema Zod 검증 스키마 (파라미터 검증용) (선택 사항)
  * @param errorOptions 에러 (선택 사항)
  * @param options React Query 옵션 설정 (선택 사항)
  * @param showToastOnSuccess 성공 시 toast 띄울지 여부 (선택 사항)
  * @param queryKeyToInvalidate 초기화할 쿼리 키 (선택 사항)
  * @returns 검증된 데이터와 메타데이터를 포함한 객체
  */
-export function useCustomMutation<TRes = undefined, TReq = undefined>({
+export function useCustomMutation<TRes = undefined, TReq = undefined, TParams = Record<string, string | number>>({
   endpoint,
   method,
   responseSchema = undefined,
   requestSchema = undefined,
+  paramsSchema = undefined,
   errorOptions = { type: DisplayType.Toast },
   showToastOnSuccess = false,
   queryKeyToInvalidate = undefined,
   options = {},
   configs = {},
-}: UseCustomMutationType<TRes, TReq>) {
+}: UseCustomMutationType<TRes, TReq, TParams>) {
   const { withErrorHandling } = useErrorHandler();
   const queryClient = useQueryClient(); // 쿼리 키 초기화를 위해 추가
 
@@ -127,7 +129,7 @@ export function useCustomMutation<TRes = undefined, TReq = undefined>({
     ...options,
     onSuccess: (
       data: ApiResponseType<TRes>,
-      variables: { data?: TReq; params?: Record<string, string | number> } | TReq | undefined,
+      variables: { data?: TReq; params?: TParams } | TReq | undefined,
       context: unknown,
     ) => {
       // 성공 시 toast 띄우기 (showToastOnSuccess가 true일 때)
@@ -145,38 +147,43 @@ export function useCustomMutation<TRes = undefined, TReq = undefined>({
     },
   };
 
-  return useMutation<
-    ApiResponseType<TRes>,
-    ApiError,
-    { data?: TReq; params?: Record<string, string | number> } | TReq | undefined
-  >({
+  return useMutation<ApiResponseType<TRes>, ApiError, { data?: TReq; params?: TParams } | TReq | undefined>({
     mutationFn: withErrorHandling(async (mutationArgs) => {
       // 인자가 { data, params } 형태인지 확인
       const isComplexArgs =
-        mutationArgs !== undefined && typeof mutationArgs === "object" && "data" in (mutationArgs as object);
-
-      // 엔드포인트 결정
-      const finalEndpoint =
-        typeof endpoint === "function"
-          ? endpoint(isComplexArgs ? (mutationArgs as { params?: Record<string, string | number> }).params : undefined)
-          : endpoint;
+        mutationArgs !== undefined &&
+        typeof mutationArgs === "object" &&
+        ("data" in (mutationArgs as object) || "params" in (mutationArgs as object));
 
       // 데이터 추출
       const data = isComplexArgs ? (mutationArgs as { data?: TReq }).data : mutationArgs;
 
-      // DELETE 요청이고 데이터가 없는 경우 검증 단계 건너뛰기
-      let validatedRequestData = undefined;
+      // params 추출
+      const params = (mutationArgs as { params?: TParams }).params;
+
+      // params 추출 및 검증
+      let validatedParams;
+      if (isComplexArgs && paramsSchema) {
+        if (params) {
+          const validated = paramsSchema.parse(params);
+          validatedParams = ApiRequestParams(paramsSchema, validated as Record<string, unknown>);
+        }
+      }
+
+      // 엔드포인트 결정
+      const finalEndpoint = typeof endpoint === "function" ? endpoint(isComplexArgs ? params : undefined) : endpoint;
 
       // 요청 데이터가 있고 requestSchema가 제공된 경우에만 검증 수행
+      let validatedRequestData;
       if (data !== undefined && requestSchema) {
         const validatedRequest = ApiRequestBody(requestSchema, data, true);
-        if (!validatedRequest?.success) throw new Error("요청 데이터 검증 실패");
-        validatedRequestData = validatedRequest.data;
+        validatedRequestData = validatedRequest?.success ? validatedRequest.data : undefined;
       }
 
       const response = await customAxios(finalEndpoint, {
         method,
-        data: validatedRequestData, // 데이터가 없으면 undefined
+        data: validatedRequestData,
+        params: validatedParams,
         ...configs,
       });
 
@@ -187,8 +194,6 @@ export function useCustomMutation<TRes = undefined, TReq = undefined>({
 
       // 응답 데이터를 camelCase로 변환 및 검증
       const validatedResponse = ApiResponse(responseSchema, response.data);
-      if (!validatedResponse) throw new Error("응답 데이터 검증 실패");
-
       return validatedResponse as ApiResponseType<TRes>;
     }, errorOptions),
     meta: {
