@@ -40,3 +40,14 @@ export const ApiRequestBody = <T extends z.ZodTypeAny, D>(dataSchema: T, data: D
     }
   }
 };
+
+// params 검증 후 snake_case로 변환
+export const ApiRequestParams = <T extends z.ZodTypeAny>(paramsSchema: T, params: Record<string, unknown>) => {
+  try {
+    return paramsSchema.transform((params) => snakecaseKeys(params, { deep: true })).parse(params);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      console.error(err.issues);
+    }
+  }
+};

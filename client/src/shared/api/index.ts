@@ -1,4 +1,4 @@
-import { ApiResponse, ApiRequestBody } from "./apiCaseConverter";
+import { ApiResponse, ApiRequestBody, ApiRequestParams } from "./apiCaseConverter";
 import { customAxios } from "./apiClient";
 import { queryKeys } from "./queryKeys";
 import { useApiError } from "./useApiError";
@@ -8,6 +8,7 @@ import { useCustomQuery, useCustomMutation, useCustomInfiniteQuery, useCustomSus
 export {
   ApiResponse,
   ApiRequestBody,
+  ApiRequestParams,
   customAxios,
   queryKeys,
   useApiError,
