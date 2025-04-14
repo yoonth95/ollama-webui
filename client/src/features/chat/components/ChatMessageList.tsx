@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { BotChatLayout, ChatMessageSkeleton, UserChatBox } from "@/features/chat/components";
+import { BotChatLayout, ChatMessageSkeleton, UserChatBox, BotChatError } from "@/features/chat/components";
 import { useGetChatMessages } from "@/features/chat/queries/useGetChatMessages";
 import { useSSEChat } from "@/features/chat/hooks/useSSEChat";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
-import { AlertCircle, LoaderCircle } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 
 /**
  * 채팅 메시지 목록 컴포넌트
@@ -31,10 +31,10 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
         {userChatData.content && <UserChatBox content={userChatData.content} images={userChatData.images ?? []} />}
 
         {sseData.error ? (
-          <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
-            <AlertCircle className="h-5 w-5" />
-            <span>{sseData.errorMessage || "응답을 받는 중 오류가 발생했습니다"}</span>
-          </div>
+          <BotChatError
+            chatRoomId={chatRoomId}
+            errorType={sseData.errorType as "network" | "timeout" | "model" | "content" | "unknown"}
+          />
         ) : sseData.isReceiving && !sseData.response ? (
           <div className="py-2">
             <LoaderCircle className="h-6 w-6 animate-spin" />

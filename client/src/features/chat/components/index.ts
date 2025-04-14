@@ -5,6 +5,7 @@ import UserChatImageItem from "./UserChatImageItem";
 import BotChatSkeleton from "./BotChatSkeleton";
 import BotChatLayout from "./BotChatLayout";
 import BotThinkingBox from "./BotThinkingBox";
+import BotChatError from "./BotChatError";
 import ChatMessageSkeleton from "./ChatMessageSkeleton";
 import ErrorChatPage from "./ErrorChatPage";
 import ChatOptimisticUI from "./ChatOptimisticUI";
@@ -18,6 +19,7 @@ export {
   BotChatSkeleton,
   BotChatLayout,
   BotThinkingBox,
+  BotChatError,
   ChatMessageSkeleton,
   ErrorChatPage,
   ChatOptimisticUI,

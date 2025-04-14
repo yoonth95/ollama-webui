@@ -1,17 +1,16 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
-import { useChatUIStore } from "@/shared/stores/useChatUIStore";
-import { AlertTriangle, RefreshCw, MessageSquare, Copy } from "lucide-react";
+import { AlertTriangle, RefreshCw, MessageSquare } from "lucide-react";
+import useMessageRetry from "@/features/chat/queries/useMessageRtry";
 
 interface BotChatErrorProps {
+  chatRoomId: string;
   errorType?: "network" | "timeout" | "model" | "content" | "unknown";
-  onRetry?: () => void;
-  onNewChat?: () => void;
 }
 
-export default function BotChatError({ errorType = "unknown", onRetry, onNewChat }: BotChatErrorProps) {
-  const [copied, setCopied] = useState(false);
-  const { retryRequest } = useChatUIStore();
+export default function BotChatError({ chatRoomId, errorType = "unknown" }: BotChatErrorProps) {
+  const navigate = useNavigate();
+  const retryMutation = useMessageRetry(chatRoomId);
 
   const errorMessages = {
     network: "네트워크 연결에 문제가 발생했습니다. 인터넷 연결을 확인해 주세요.",
@@ -30,21 +29,11 @@ export default function BotChatError({ errorType = "unknown", onRetry, onNewChat
   };
 
   const handleRetry = () => {
-    retryRequest();
-    if (onRetry) onRetry();
+    retryMutation.mutate({ roomId: chatRoomId });
   };
 
-  const copyErrorDetails = () => {
-    const errorDetails = `
-      오류 유형: ${errorType}
-      오류 코드: ${errorCodes[errorType]}
-      오류 메시지: ${errorMessages[errorType]}
-      시간: ${new Date().toLocaleString()}
-    `.trim();
-
-    navigator.clipboard.writeText(errorDetails);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const moveToHome = () => {
+    navigate("/");
   };
 
   return (
@@ -61,7 +50,7 @@ export default function BotChatError({ errorType = "unknown", onRetry, onNewChat
           <p className="mt-2 text-red-200/80">{errorMessages[errorType]}</p>
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap justify-between gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -72,25 +61,13 @@ export default function BotChatError({ errorType = "unknown", onRetry, onNewChat
             다시 시도
           </Button>
 
-          {onNewChat && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNewChat}
-              className="border-red-800/30 bg-red-950/50 text-red-200 hover:bg-red-900/50 hover:text-red-100"
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />새 채팅 시작
-            </Button>
-          )}
-
           <Button
             variant="outline"
             size="sm"
-            onClick={copyErrorDetails}
-            className="ml-auto border-red-800/30 bg-red-950/50 text-red-200 hover:bg-red-900/50 hover:text-red-100"
+            onClick={moveToHome}
+            className="border-red-800/30 bg-red-950/50 text-red-200 hover:bg-red-900/50 hover:text-red-100"
           >
-            <Copy className="mr-2 h-4 w-4" />
-            {copied ? "복사됨" : "오류 정보 복사"}
+            <MessageSquare className="mr-2 h-4 w-4" />새 채팅 시작
           </Button>
         </div>
       </div>
