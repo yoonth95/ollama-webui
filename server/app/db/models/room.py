@@ -18,5 +18,5 @@ class Room(Base):
 
 # updated_at 자동 업데이트를 위한 이벤트 리스너
 @event.listens_for(Room, 'before_update')
-def update_updated_at(target):
+def update_updated_at(_mapper, _connection, target):
   target.updated_at = get_kst_time()
