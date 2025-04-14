@@ -27,10 +27,6 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
         }`,
         "dark:hover:bg-accent",
       )}
-      onMouseEnter={() => setHoveredRoom(chat.id)}
-      onMouseLeave={() => {
-        if (!openedRoom) setHoveredRoom(null);
-      }}
     >
       <Link to={"/chat/" + chat.id} className={cn(`block flex-1 cursor-pointer truncate rounded-md p-2 text-sm`)}>
         {roomTitle}
@@ -51,7 +47,7 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
             variant="ghost"
             aria-label="sub-menu-button"
             className={cn(
-              `absolute right-2 top-1/2 -translate-y-1/2 transform p-2 opacity-0 transition-opacity group-hover/menu-item:opacity-100 dark:hover:bg-transparent ${
+              `absolute top-1/2 right-2 -translate-y-1/2 transform p-2 opacity-0 transition-opacity group-hover/menu-item:opacity-100 dark:hover:bg-transparent ${
                 isActive ? "opacity-100" : ""
               }`,
             )}
