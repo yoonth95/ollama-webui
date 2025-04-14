@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Body
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
@@ -10,9 +11,8 @@ from app.utils.handle_exceptions import handle_exceptions
 from app.db.database import get_db
 from app.core.config import settings
 from app.utils.memory_pubsub import memory_pubsub
+from app.schemas.chat import ChatUserMessageType, ChatRetryRequestType, ChatCancelRequestType, ChatForceStopRequestType
 import logging
-from datetime import datetime
-from app.schemas.chat import ChatUserMessageType
 
 router = APIRouter()
 
@@ -189,6 +189,8 @@ async def stream_chat(room_id: str, request: Request):
         # 클라이언트 연결 종료 확인
         if await request.is_disconnected():
           logger.info(f"📤 클라이언트 연결 종료: {room_id}")
+          # 응답 생성 중단 처리 (클라이언트가 연결을 종료한 경우)
+          asyncio.create_task(ChatService.cancel_chat(room_id))
           break
         
         # 주기적으로 ping 메시지 전송 (15초마다)
@@ -234,6 +236,40 @@ async def stream_chat(room_id: str, request: Request):
               # 에러 발생 시 잠시 대기 후 연결 계속 유지
               await asyncio.sleep(1)
               continue
+            
+            # 취소 메시지 처리
+            if message_data.get("cancelled"):
+              logger.info(f"스트리밍 취소 메시지: {room_id}")
+              
+              # 강제 취소인지 확인
+              force_stopped = message_data.get("force_stopped", False)
+              if force_stopped:
+                logger.info(f"강제 취소로 인해 답변이 저장되지 않음")
+                yield {
+                  "event": "force_stopped",
+                  "data": data
+                }
+                # 강제 취소 메시지 발생 시 연결 즉시 종료
+                return
+              
+              # 일반 취소 - 부분 저장 여부 확인하여 클라이언트에게 전달
+              was_saved = message_data.get("partial_saved", False)
+              if was_saved:
+                logger.info(f"부분 생성된 답변 저장됨 ({message_data.get('partial_length', 0)} 자)")
+              else:
+                reason = ""
+                # 저장 실패 이유 확인 (태그 처리 등)
+                if "사고 과정" in message_data.get("message", ""):
+                  reason = " - 불완전한 <think> 태그 감지"
+                logger.info(f"부분 생성된 답변 저장되지 않음{reason}")
+              
+              yield {
+                "event": "cancelled",
+                "data": data
+              }
+              
+              # 취소 메시지 발생 시 연결 즉시 종료
+              return
             
             # 완료 메시지 확인
             if message_data.get("done"):
@@ -284,10 +320,35 @@ async def stream_chat(room_id: str, request: Request):
   
   return EventSourceResponse(event_generator())
 
-@router.post("/chat/retry/{room_id}")
+@router.post("/chat/cancel")
 @handle_exceptions
-async def retry_chat(room_id: str, db: Session = Depends(get_db)):
+async def cancel_chat(request: ChatCancelRequestType):
+  """채팅 응답 생성 중단"""
+  room_id = request.room_id
+  logger.info(f"📩 클라이언트 채팅 중단 요청: {room_id}")
+  
+  # 채팅 응답 생성 중단 서비스 호출
+  await ChatService.cancel_chat(room_id)
+  
+  return JSONResponse(content=create_response(True, "채팅 중단 완료", None), status_code=200)
+
+@router.post("/chat/force-stop")
+@handle_exceptions
+async def force_stop_chat(request: ChatForceStopRequestType):
+  """채팅 응답 강제 중단 (답변 저장하지 않음)"""
+  room_id = request.room_id
+  logger.info(f"📩 클라이언트 채팅 강제 중단 요청: {room_id}")
+  
+  # 채팅 응답 강제 중단 서비스 호출
+  await ChatService.force_stop_chat(room_id)
+  
+  return JSONResponse(content=create_response(True, "채팅 강제 중단 완료", None), status_code=200)
+
+@router.post("/chat/retry")
+@handle_exceptions
+async def retry_chat(request: ChatRetryRequestType, db: Session = Depends(get_db)):
   """재시도 요청"""
+  room_id = request.room_id
   logger.info(f"📩 클라이언트 재시도 요청: {room_id}")
   
   # 기존 채팅 내역 가져오기
@@ -343,10 +404,11 @@ async def retry_chat(room_id: str, db: Session = Depends(get_db)):
   # 어시스턴트 메시지가 이미 있으면, DB에서 삭제
   if assistant_messages and len(assistant_messages) > 0:
     last_assistant_message = assistant_messages[-1]
+    print(last_assistant_message)
     # DB에서 답변 메시지 삭제
-    await ChatService.delete_assistant_message(db, last_assistant_message["id"])
+    # await ChatService.delete_assistant_message(db, last_assistant_message["id"])
   
   # 비동기로 새 Ollama 요청 실행
-  asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request))
+  # asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request))
   
   return JSONResponse(content=create_response(True, "재시도 요청 완료", None), status_code=200)

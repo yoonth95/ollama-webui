@@ -35,3 +35,16 @@ class ChatHistoryResponseType(TimeModelMixin):
   model_config = {
     "from_attributes": True
   }
+
+class ChatRetryRequestType(BaseModel):
+  """채팅 재시도 요청 타입"""
+  room_id: str
+
+class ChatCancelRequestType(BaseModel):
+  """채팅 중단 요청 타입"""
+  room_id: str
+
+class ChatForceStopRequestType(BaseModel):
+  """채팅 강제 취소 요청 타입"""
+  room_id: str
+
