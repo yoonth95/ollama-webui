@@ -3,10 +3,10 @@ import Markdown from "markdown-to-jsx";
 import Prism from "prismjs";
 import { CodeBlock, InlineCode } from "@/features/markdown/components";
 import "prismjs/plugins/autoloader/prism-autoloader.min.js";
-import "prismjs/themes/prism-vsc-dark-plus.css";
+import "@/features/markdown/styles/prism-vsc-dark-plus.min.css";
 
 // Prism 플러그인 설정 (코드 블록 언어 자동 로드)
-if (typeof window !== "undefined" && window.Prism) {
+https: if (typeof window !== "undefined" && window.Prism) {
   window.Prism.plugins.autoloader.languages_path = "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/";
 }
 
