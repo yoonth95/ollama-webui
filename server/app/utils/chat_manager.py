@@ -8,4 +8,7 @@ active_chats: Dict[str, asyncio.Task] = {}
 cancelled_chats: Dict[str, bool] = {}
 
 # 강제 취소된 채팅 (room_id: 강제 취소 여부)
-force_stopped_chats: Dict[str, bool] = {} 
+force_stopped_chats: Dict[str, bool] = {}
+
+# 응답 생성이 완료된 채팅 (room_id: 완료 여부)
+completed_chats: Dict[str, bool] = {} 

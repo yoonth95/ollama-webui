@@ -6,10 +6,10 @@ from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.orm import Session
 from app.services.chat import ChatService
+from app.db.database import get_db
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
-from app.db.database import get_db
-from app.core.config import settings
+from app.utils.chat_manager import cancelled_chats
 from app.utils.memory_pubsub import memory_pubsub
 from app.schemas.chat import ChatUserMessageType, ChatRetryRequestType, ChatCancelRequestType, ChatForceStopRequestType
 import logging
@@ -190,7 +190,12 @@ async def stream_chat(room_id: str, request: Request):
         if await request.is_disconnected():
           logger.info(f"📤 클라이언트 연결 종료: {room_id}")
           # 응답 생성 중단 처리 (클라이언트가 연결을 종료한 경우)
-          asyncio.create_task(ChatService.cancel_chat(room_id))
+          # 이미 취소된 채팅인지 확인 - cancelled_chats에 있으면 중복 취소 방지
+          if room_id not in cancelled_chats or not cancelled_chats[room_id]:
+            logger.info(f"Room {room_id}: 클라이언트 연결 종료로 인한 취소 처리 시작")
+            asyncio.create_task(ChatService.cancel_chat(room_id))
+          else:
+            logger.info(f"Room {room_id}: 이미 취소된 채팅이므로 추가 cancel_chat 호출 건너뜀")
           break
         
         # 주기적으로 ping 메시지 전송 (15초마다)

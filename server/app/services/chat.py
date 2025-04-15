@@ -11,7 +11,7 @@ from app.schemas.chat import ChatUserMessageType, ChatAssistantMessageType, Chat
 from app.db.database import SessionLocal
 from app.core.config import settings
 from app.utils.memory_pubsub import memory_pubsub
-from app.utils.chat_manager import active_chats, cancelled_chats, force_stopped_chats
+from app.utils.chat_manager import active_chats, cancelled_chats, force_stopped_chats, completed_chats
 
 logger = logging.getLogger(__name__)
 
@@ -171,60 +171,45 @@ class ChatService:
             pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
             return
             
-          # 취소 시점의 답변 확인 (일반 취소)
+          # 취소 시점의 답변이 저장돼있는지 확인만 하고 저장은 cancel_chat에서 처리함
           cached_answer = await ChatService.get_cached_answer(room_id)
           
-          # 인메모리 데이터 정리 (먼저 삭제)
-          pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
-          
-          # 일반 취소 로직 - 조건에 따라 저장 시도
+          # 일반 취소 로직 - 조건 검사만 진행
           if cached_answer:
-            # 유효성 검사
             is_valid = await ChatService.is_valid_answer_for_storage(cached_answer)
             
             if is_valid:
-              # 충분한 길이의 유효한 답변이 있는 경우 저장
-              logger.info(f"Room {room_id}: Ollama API 호출 취소 - 부분 답변 저장 ({len(cached_answer)} 자)")
+              logger.info(f"Room {room_id}: Ollama API 호출 취소 - cancel_chat에서 저장 처리함 ({len(cached_answer)} 자)")
               
-              # 부분 답변 DB 저장
-              assistant_message = ChatAssistantMessageType(
-                room_id=room_id,
-                content=cached_answer,
-                model=model
-              )
-              
-              # 답변 저장
-              asyncio.create_task(ChatService.save_assistant_message(None, assistant_message, commit=True))
-              
-              # 취소 메시지 발행 (부분 저장)
+              # 취소 메시지 발행 (부분 저장 알림만)
               await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
                 "cancelled": True,
                 "message": "응답 생성이 취소되었습니다. 지금까지 생성된 답변이 저장되었습니다.",
-                "partial_saved": True,
-                "partial_length": len(cached_answer)
+                "partial_saved": True
               }))
             else:
-              # 유효하지 않은 답변인 경우 메시지만 전송
-              if cached_answer and "<think>" in cached_answer and "</think>" not in cached_answer:
+              # 유효하지 않은 답변은 저장하지 않음
+              if "<think>" in cached_answer and "</think>" not in cached_answer:
                 message = "응답 생성이 취소되었습니다. (생성 중이던 사고 과정이 완성되지 않아 저장되지 않았습니다.)"
-                logger.info(f"Room {room_id}: <think> 태그가 닫히지 않아 저장하지 않음")
               else:
-                message = "응답 생성이 취소되었습니다."
+                message = "응답 생성이 취소되었습니다. 답변이 너무 짧아 저장되지 않았습니다."
               
-              # 취소 메시지 발행 (저장 없음)
+              logger.info(f"Room {room_id}: Ollama API 호출 취소 - 유효하지 않은 답변 ({len(cached_answer)} 자)")
+              
+              # 취소 메시지 발행 (저장하지 않음)
               await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
                 "cancelled": True,
                 "message": message,
                 "partial_saved": False
               }))
           else:
-            # 저장할 답변이 없는 경우
+            # 답변이 없는 경우
             await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
               "cancelled": True,
               "message": "응답 생성이 취소되었습니다.",
               "partial_saved": False
             }))
-            
+        
           return
           
         try:
@@ -291,8 +276,7 @@ class ChatService:
                     pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
                     return
                   
-                  # 취소 시점에서 이미 생성된 답변 확인 (이미 full_answer에 있음)
-                  # 유효성 검사
+                  # 취소 시 cancel_chat 함수에서 저장 처리
                   is_valid = await ChatService.is_valid_answer_for_storage(full_answer)
                   
                   if not is_valid:
@@ -310,20 +294,13 @@ class ChatService:
                       "partial_saved": False
                     }))
                   else:
-                    # 충분한 길이의 유효한 답변이 있는 경우 저장
-                    logger.info(f"Room {room_id}: 응답 생성 중 취소 - 부분 답변 저장 ({len(full_answer)} 자)")
+                    # 충분한 길이의 유효한 답변이 있는 경우, cancel_chat 함수에서 저장
+                    logger.info(f"Room {room_id}: 응답 생성 중 취소 - 저장은 cancel_chat에서 처리 ({len(full_answer)} 자)")
                     
-                    # 부분 답변 DB 저장
-                    assistant_message = ChatAssistantMessageType(
-                      room_id=room_id,
-                      content=full_answer,
-                      model=model
-                    )
+                    # 인메모리에 데이터 업데이트 - 최종 상태 저장 
+                    pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", full_answer, MESSAGE_EXPIRE_TIME)
                     
-                    # 답변 저장
-                    asyncio.create_task(ChatService.save_assistant_message(None, assistant_message, commit=True))
-                    
-                    # 취소 메시지 발행 (부분 저장)
+                    # 취소 메시지 발행
                     await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
                       "cancelled": True,
                       "message": "응답 생성이 취소되었습니다. 지금까지 생성된 답변이 저장되었습니다.",
@@ -331,8 +308,6 @@ class ChatService:
                       "partial_length": len(full_answer)
                     }))
                   
-                  # 인메모리 데이터 정리
-                  pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
                   return
                 
                 chunk_text = chunk.decode('utf-8').strip()
@@ -344,6 +319,9 @@ class ChatService:
                   
                   # 완료 메시지인 경우
                   if "done" in chunk_data and chunk_data["done"]:
+                    # 완료 상태 기록
+                    completed_chats[room_id] = True
+                    
                     # 최종 답변을 데이터베이스에 저장
                     assistant_message = ChatAssistantMessageType(
                       room_id=room_id,
@@ -426,6 +404,12 @@ class ChatService:
       elif "model" in error_str or "load" in error_str:
         error_type = ERROR_TYPE_MODEL
       
+      # 생성된 답변이 있을 경우 저장 (오류 발생 시에도)
+      if full_answer and len(full_answer) >= 10:
+        logger.info(f"Room {room_id}: 오류 발생했지만 생성된 답변 있음 ({len(full_answer)} 자) - 인메모리에 저장")
+        # 인메모리에 저장 - cancel_chat 함수에서 처리하도록
+        pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", full_answer, MESSAGE_EXPIRE_TIME)
+      
       await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
         "error": True,
         "error_type": error_type,
@@ -461,15 +445,25 @@ class ChatService:
   @staticmethod
   async def is_valid_answer_for_storage(answer: str) -> bool:
     """저장 가능한 유효한 답변인지 확인
-    1. 최소 길이 확인 (5자 이상)
+    1. 최소 길이 확인 (10자 이상으로 변경)
     2. <think> 태그가 열려 있지만 닫히지 않은 경우 확인
+    3. 추론 과정만 있는 경우 확인
     """
-    if not answer or len(answer) < 5:
+    if not answer or len(answer) < 10:
       return False
       
     # <think> 태그 처리 - 열려있는데 닫히지 않은 경우 저장하지 않음
     if "<think>" in answer and "</think>" not in answer:
       return False
+    
+    # 추론 과정만 있거나, 완성되지 않은 답변인지 검사
+    # 추론 과정은 <think>...</think> 형식으로 되어 있음
+    # 추론 과정만 있거나 추론 과정 이후 내용이 매우 짧은 경우(20자 미만) 저장하지 않음
+    if "<think>" in answer and "</think>" in answer:
+      think_end_pos = answer.rfind("</think>") + len("</think>")
+      remaining_content = answer[think_end_pos:].strip()
+      if not remaining_content or len(remaining_content) < 20:
+        return False
       
     return True
 
@@ -477,6 +471,25 @@ class ChatService:
   async def cancel_chat(room_id: str):
     """채팅 응답 생성 중단"""
     logger.info(f"Room {room_id}: 채팅 응답 생성 중단 요청")
+    
+    # 이미 완료된 응답인지 확인
+    if room_id in completed_chats and completed_chats[room_id]:
+      logger.info(f"Room {room_id}: 이미 완료된 응답이므로 중단 처리 건너뜀")
+      
+      # 취소 메시지만 발행 (저장 없음)
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "cancelled": True,
+        "message": "응답이 이미 완료되었습니다.",
+        "already_completed": True
+      }))
+      
+      # 취소 플래그만 설정
+      cancelled_chats[room_id] = True
+      
+      # 5초 후 취소 상태 자동 정리
+      asyncio.create_task(ChatService._clear_cancel_and_force_stop_state(room_id, 5))
+      
+      return False
     
     # 현재 진행 중인 채팅인지 확인
     is_active = room_id in active_chats
@@ -508,6 +521,12 @@ class ChatService:
       try:
         db = SessionLocal()
         await ChatService.save_assistant_message(db, assistant_message, commit=True)
+        
+        # 저장 성공 시 로그
+        logger.info(f"Room {room_id}: 답변 DB 저장 성공 (길이: {len(cached_answer)})")
+        
+        # 완료 상태로 표시 (부분 답변이지만 저장이 완료됨)
+        completed_chats[room_id] = True
       except Exception as e:
         logger.error(f"Room {room_id}: 취소 중 부분 답변 저장 실패 - {str(e)}")
         is_valid = False
@@ -551,6 +570,8 @@ class ChatService:
       del cancelled_chats[room_id]
     if room_id in force_stopped_chats:
       del force_stopped_chats[room_id]
+    if room_id in completed_chats:
+      del completed_chats[room_id]
     logger.info(f"Room {room_id}: 취소 및 강제 취소 상태 초기화 완료")
     
   @staticmethod
