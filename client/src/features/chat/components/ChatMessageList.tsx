@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useShallow } from "zustand/shallow";
 import { BotChatLayout, ChatMessageSkeleton, UserChatBox } from "@/features/chat/components";
 import { useGetChatMessages } from "@/features/chat/queries/useGetChatMessages";
 import { useSSEChat } from "@/features/chat/hooks/useSSEChat";
@@ -12,7 +13,17 @@ import { AlertCircle, LoaderCircle } from "lucide-react";
  * - 일반적인 접근(일반 모드): 채팅 히스토리 API로 받은 전체 메시지 표시
  */
 const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
-  const { userChatData, isOptimistic, deactivateOptimisticUI } = useChatOptimisticStore();
+  const [userChatData, isOptimistic, deactivateOptimisticUI, setIsReceivingResponse, isReceivingResponse] =
+    useChatOptimisticStore(
+      useShallow((state) => [
+        state.userChatData,
+        state.isOptimistic,
+        state.deactivateOptimisticUI,
+        state.setIsReceivingResponse,
+        state.isReceivingResponse,
+      ]),
+    );
+
   const { data: historyMessages, isLoading } = useGetChatMessages(chatRoomId, isOptimistic);
 
   // 일반 모드에서 채팅 히스토리 로드 완료 시 optimistic 모드 해제
@@ -22,7 +33,11 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
     }
   }, [isLoading, historyMessages, isOptimistic, deactivateOptimisticUI]);
 
-  const { sseData } = useSSEChat(chatRoomId, isOptimistic);
+  const { sseData } = useSSEChat({
+    chatRoomId,
+    isOptimistic,
+    setIsReceivingResponse,
+  });
 
   // Optimistic
   if (isOptimistic) {
@@ -35,7 +50,7 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
             <AlertCircle className="h-5 w-5" />
             <span>{sseData.errorMessage || "응답을 받는 중 오류가 발생했습니다"}</span>
           </div>
-        ) : sseData.isReceiving && !sseData.response ? (
+        ) : isReceivingResponse && !sseData.response ? (
           <div className="py-2">
             <LoaderCircle className="h-6 w-6 animate-spin" />
           </div>

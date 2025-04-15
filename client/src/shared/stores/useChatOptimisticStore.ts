@@ -5,38 +5,42 @@ export type ErrorType = "network" | "timeout" | "model" | "content" | "unknown";
 
 interface ChatOptimisticStoreType {
   isOptimistic: boolean;
-  isLoading: boolean;
+  isCreateRoomLoading: boolean;
   userChatData: {
     content: string;
     images: ImageDataType[];
   };
+  isReceivingResponse: boolean;
 
   activateOptimisticUI: () => void;
   deactivateOptimisticUI: () => void;
-  setLoading: (isLoading: boolean) => void;
+  setIsReceivingResponse: (isReceivingResponse: boolean) => void;
+  setCreateRoomLoading: (isCreateRoomLoading: boolean) => void;
   setUserChatData: (userChatData: { content: string; images: ImageDataType[] }) => void;
   clearUserChatData: () => void;
 }
 
 export const useChatOptimisticStore = create<ChatOptimisticStoreType>((set) => ({
   isOptimistic: false,
-  isLoading: false,
+  isCreateRoomLoading: false,
   userChatData: { content: "", images: [] },
+  isReceivingResponse: false,
 
   activateOptimisticUI: () =>
     set({
       isOptimistic: true,
-      isLoading: true,
+      isCreateRoomLoading: true,
     }),
 
   deactivateOptimisticUI: () =>
     set({
       isOptimistic: false,
-      isLoading: false,
+      isCreateRoomLoading: false,
+      isReceivingResponse: false,
     }),
 
-  setLoading: (isLoading) => set({ isLoading }),
-
+  setIsReceivingResponse: (isReceivingResponse: boolean) => set({ isReceivingResponse }),
+  setCreateRoomLoading: (isCreateRoomLoading) => set({ isCreateRoomLoading }),
   setUserChatData: (userChatData) => set({ userChatData }),
   clearUserChatData: () => set({ userChatData: { content: "", images: [] } }),
 }));
