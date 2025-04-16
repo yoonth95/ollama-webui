@@ -3,20 +3,22 @@ import { ImageDataType } from "@/shared/types/chatMessageType";
 
 export type ErrorType = "network" | "timeout" | "model" | "content" | "unknown";
 
+export type userChatDataType = {
+  content: string;
+  images: ImageDataType[];
+};
+
 interface ChatOptimisticStoreType {
   isOptimistic: boolean;
   isCreateRoomLoading: boolean;
-  userChatData: {
-    content: string;
-    images: ImageDataType[];
-  };
+  userChatData: userChatDataType;
   isReceivingResponse: boolean;
 
   activateOptimisticUI: () => void;
   deactivateOptimisticUI: () => void;
   setIsReceivingResponse: (isReceivingResponse: boolean) => void;
   setCreateRoomLoading: (isCreateRoomLoading: boolean) => void;
-  setUserChatData: (userChatData: { content: string; images: ImageDataType[] }) => void;
+  setUserChatData: (userChatData: userChatDataType) => void;
   clearUserChatData: () => void;
 }
 
