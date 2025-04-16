@@ -14,7 +14,7 @@ const BotThinkingBox = ({ content }: BotThinkingBoxProps) => {
         </AccordionTrigger>
         <AccordionContent>
           <div className="text-sm italic">
-            <MarkdownViewer content={content} />
+            <MarkdownViewer content={content.replace(/<\/?think>/g, "")} />
           </div>
         </AccordionContent>
       </AccordionItem>
