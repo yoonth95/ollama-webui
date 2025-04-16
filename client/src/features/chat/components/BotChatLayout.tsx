@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
-import { BotThinkingBox } from "@/features/chat/components";
+import { BotThinkingBox, BotChatToolbar } from "@/features/chat/components";
 import useThinkContent from "@/features/chat/hooks/useThinkContent";
 
 interface BotChatLayoutProps {
@@ -31,9 +31,17 @@ const BotChatLayout = ({ content, modelName, createdAt }: BotChatLayoutProps) =>
         {isThinking && thinkContent && <BotThinkingBox content={thinkContent} />}
 
         {/* 본문 내용 */}
-        <div className="px-2 py-2 break-words">
-          <MarkdownViewer content={mainContent} />
-        </div>
+        {mainContent ? (
+          <div className="px-2 py-2 break-words">
+            <MarkdownViewer content={mainContent} />
+          </div>
+        ) : (
+          <div className="w-fit py-2">
+            <i>응답 없음.</i>
+          </div>
+        )}
+
+        <BotChatToolbar content={mainContent || "응답 없음."} />
       </div>
     </article>
   );
