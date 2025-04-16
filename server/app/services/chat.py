@@ -215,14 +215,15 @@ class ChatService:
         try:
           async with aiohttp.ClientSession() as session:
             url = f"{settings.OLLAMA_API_BASE_URL}/api/chat"
-            
-            # API 요청에 스트리밍 옵션 추가
             ollama_request["stream"] = True
-            
-            # 요청 타임아웃 설정 (30초)
-            timeout = aiohttp.ClientTimeout(total=30)
+            timeout = aiohttp.ClientTimeout(total=30) # 요청 타임아웃 설정 (30초)
             
             async with session.post(url, json=ollama_request, timeout=timeout) as response:
+              # 네트워크 오류 시뮬레이션
+              if random.random() < 0.8:
+                logger.info(f"Room {room_id}: 네트워크 오류 시뮬레이션 발생")
+                raise aiohttp.ClientError("Simulated network error")
+              
               if response.status != 200:
                 error_text = await response.text()
                 logger.error(f"Room {room_id}: Ollama API 오류 - {response.status}, {error_text}")
@@ -360,7 +361,33 @@ class ChatService:
               
               # 루프를 성공적으로 완료하면 재시도 루프 종료
               break
+        
+        except aiohttp.ClientError as e:
+          logger.error(f"Room {room_id}: 네트워크 오류 발생 - {str(e)}")
           
+          # 재시도 여부 확인
+          if current_retry < max_retries:
+            logger.info(f"Room {room_id}: 네트워크 오류 재시도 ({current_retry + 1}/{max_retries})")
+            current_retry += 1
+            
+            # 재시도 알림 전송
+            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+              "warning": True,
+              "message": f"네트워크 오류, 재시도 중입니다 ({current_retry}/{max_retries})..."
+            }))
+            
+            # 잠시 대기 후 재시도
+            await asyncio.sleep(1)
+          else:
+            # 최대 재시도 횟수 초과
+            error_message = json.dumps({
+              "error": True,
+              "error_type": ERROR_TYPE_NETWORK,
+              "message": "네트워크 오류, 최대 재시도 횟수 초과"
+            })
+            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
+            return
+
         except asyncio.TimeoutError:
           logger.warning(f"Room {room_id}: Ollama API 요청 타임아웃")
           
