@@ -6,7 +6,7 @@ import "prismjs/plugins/autoloader/prism-autoloader.min.js";
 import "@/features/markdown/styles/prism-vsc-dark-plus.min.css";
 
 // Prism 플러그인 설정 (코드 블록 언어 자동 로드)
-https: if (typeof window !== "undefined" && window.Prism) {
+if (typeof window !== "undefined" && window.Prism) {
   window.Prism.plugins.autoloader.languages_path = "https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/";
 }
 
