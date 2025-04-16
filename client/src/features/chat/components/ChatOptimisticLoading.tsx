@@ -7,7 +7,7 @@ import { LoaderCircle } from "lucide-react";
  * 홈 페이지 Optimistic UI
  * 메시지 전송 시 유저 메시지를 표시하고 봇 응답은 로딩으로 표시
  */
-const ChatOptimisticUI = () => {
+const ChatOptimisticLoading = () => {
   const [userChatData, isOptimistic, isCreateRoomLoading] = useChatOptimisticStore(
     useShallow((state) => [state.userChatData, state.isOptimistic, state.isCreateRoomLoading]),
   );
@@ -30,4 +30,4 @@ const ChatOptimisticUI = () => {
   );
 };
 
-export default ChatOptimisticUI;
+export default ChatOptimisticLoading;
