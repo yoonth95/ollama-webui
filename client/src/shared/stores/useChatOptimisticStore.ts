@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { ImageDataType } from "@/shared/types/chatMessageType";
 
-export type ErrorType = "network" | "timeout" | "model" | "content" | "unknown";
-
 export type userChatDataType = {
   content: string;
   images: ImageDataType[];
