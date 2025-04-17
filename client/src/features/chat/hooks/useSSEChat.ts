@@ -26,7 +26,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
 
   const [sseData, setSseData] = useState<SSEChatDataType>({
     isReceiving: false,
-    response: "",
+    content: "",
   });
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -37,7 +37,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
     }
 
     // SSE 연결 시작 상태 설정
-    setSseData({ isReceiving: true, response: "" });
+    setSseData({ isReceiving: true, content: "" });
 
     // SSE 연결 생성
     const eventSource = new EventSource(`/api/v1/chat/stream/${chatRoomId}`);
@@ -56,35 +56,31 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
         setIsReceivingResponse(true);
         const data = JSON.parse(event.data);
 
-        // 초기 메시지인 경우 (이미 저장된 답변)
-        if (data.init) {
-          setSseData({
-            isReceiving: true,
-            response: data.full,
-            model: data.model,
-            createdAt: data.created_at,
-          });
-          return;
+        const responseData = {
+          isRetry: false,
+          isReceiving: true,
+          content: data.full,
+          model: data.model,
+          createdAt: data.created_at,
+        };
+
+        // 서버에서 오류 발생 시 재시도 메시지
+        if (data.warning) {
+          console.warn(data.message);
+          responseData.content = data.message;
+          responseData.isRetry = true;
+          setSseData(responseData);
         }
 
-        // 메시지가 계속 추가되는 경우
-        if (data.delta) {
-          setSseData({
-            isReceiving: true,
-            response: data.full,
-            model: data.model,
-            createdAt: data.created_at,
-          });
+        // 이미 저장된 답변이 있는 경우 또는 메시지가 계속 추가되는 경우
+        if (data.init || data.delta) {
+          setSseData(responseData);
         }
 
         // 완료 메시지
         if (data.done) {
-          setSseData({
-            isReceiving: false,
-            response: data.full,
-            model: data.model,
-            createdAt: data.created_at,
-          });
+          responseData.isReceiving = false;
+          setSseData(responseData);
           setIsReceivingResponse(false);
         }
       } catch (error) {
@@ -104,17 +100,17 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
         // 오류 상태 설정
         setSseData({
           isReceiving: false,
-          response: "",
+          content: "",
           error: true,
-          errorType: errorData.error_type || "unknown",
+          errorType: errorData.error_type || "UNKNOWN",
           errorMessage: errorData.message || "알 수 없는 오류가 발생했습니다",
         });
         setIsReceivingResponse(false);
 
         const errorType = errorData.error_type;
-        if (errorType === "network" || errorType === "timeout") {
+        if (errorType === "NETWORK" || errorType === "TIMEOUT") {
           regularCancelMutation({ roomId: chatRoomId });
-        } else if (errorType === "model" || errorType === "content") {
+        } else if (errorType === "MODEL" || errorType === "CONTENT") {
           forceStopMutation({ roomId: chatRoomId });
         } else {
           regularCancelMutation({ roomId: chatRoomId });
@@ -125,9 +121,9 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
         // 기본 오류 처리
         setSseData({
           isReceiving: false,
-          response: "",
+          content: "",
           error: true,
-          errorType: "connection",
+          errorType: "CONNECTION",
           errorMessage: "연결 중 오류가 발생했습니다",
         });
         setIsReceivingResponse(false);
@@ -142,9 +138,9 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
     eventSource.addEventListener("timeout", () => {
       setSseData({
         isReceiving: false,
-        response: "",
+        content: "",
         error: true,
-        errorType: "timeout",
+        errorType: "TIMEOUT",
         errorMessage: "연결 시간이 초과되었습니다",
       });
       setIsReceivingResponse(false);
@@ -158,7 +154,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
     eventSource.addEventListener("inactive", () => {
       setSseData({
         isReceiving: false,
-        response: "",
+        content: "",
       });
       setIsReceivingResponse(false);
 

@@ -23,13 +23,14 @@ METADATA_KEY_PREFIX = "metadata:"
 ANSWER_KEY_PREFIX = "answer:"
 CHAT_CHANNEL_PREFIX = "chat:"
 MESSAGE_EXPIRE_TIME = 60 * 60 * 24  # 24시간
+MAX_RETRIES = 3
 
 # 오류 타입 상수
-ERROR_TYPE_NETWORK = "network"
-ERROR_TYPE_TIMEOUT = "timeout"
-ERROR_TYPE_MODEL = "model"
-ERROR_TYPE_CONTENT = "content"
-ERROR_TYPE_UNKNOWN = "unknown"
+ERROR_TYPE_NETWORK = "NETWORK"
+ERROR_TYPE_TIMEOUT = "TIMEOUT"
+ERROR_TYPE_MODEL = "MODEL"
+ERROR_TYPE_CONTENT = "CONTENT"
+ERROR_TYPE_UNKNOWN = "UNKNOWN"
 
 class ChatService:
   @staticmethod
@@ -123,329 +124,403 @@ class ChatService:
     model = ollama_request.get("model", "unknown")
     
     try:
-      # 현재 진행 중인 응답 생성 태스크 등록
-      active_chats[room_id] = asyncio.current_task()
+      # 세션 초기화 및 메타데이터 설정
+      await ChatService._initialize_chat_session(room_id, model)
       
-      # 이전 응답이 있을 경우 삭제
-      pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
-      
-      # 초기 메타데이터 저장 - 모델명과 요청 시작 시간
-      metadata = {
-        "model": model,
-        "created_at": datetime.now().isoformat()
-      }
-      pubsub_client.set(f"{METADATA_KEY_PREFIX}{room_id}", json.dumps(metadata), MESSAGE_EXPIRE_TIME)
-      
-      # API 호출 시작 알림
-      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-        "status": "generating",
-        "model": model,
-        "timestamp": datetime.now().isoformat()
-      }))
-      
-      # API 호출 최대 시도 횟수
-      max_retries = 2
-      current_retry = 0
-      
-      while current_retry <= max_retries:
-        # 취소 여부 확인
-        if room_id in cancelled_chats and cancelled_chats[room_id]:
-          logger.info(f"Room {room_id}: Ollama API 호출 취소됨")
-          
-          # 강제 취소인지 확인
-          is_force_stopped = room_id in force_stopped_chats and force_stopped_chats[room_id]
-          
-          # 강제 취소인 경우, 저장하지 않고 메시지만 발행
-          if is_force_stopped:
-            logger.info(f"Room {room_id}: 강제 취소로 인해 저장하지 않음")
-            
-            # 강제 취소 메시지 발행
-            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-              "force_stopped": True,
-              "cancelled": True,
-              "message": "응답 생성이 강제 중단되었습니다. 답변이 저장되지 않았습니다.",
-              "partial_saved": False
-            }))
-            
-            # 인메모리 데이터 삭제
-            pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
-            return
-            
-          # 취소 시점의 답변이 저장돼있는지 확인만 하고 저장은 cancel_chat에서 처리함
-          cached_answer = await ChatService.get_cached_answer(room_id)
-          
-          # 일반 취소 로직 - 조건 검사만 진행
-          if cached_answer:
-            is_valid = await ChatService.is_valid_answer_for_storage(cached_answer)
-            
-            if is_valid:
-              logger.info(f"Room {room_id}: Ollama API 호출 취소 - cancel_chat에서 저장 처리함 ({len(cached_answer)} 자)")
-              
-              # 취소 메시지 발행 (부분 저장 알림만)
-              await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                "cancelled": True,
-                "message": "응답 생성이 취소되었습니다. 지금까지 생성된 답변이 저장되었습니다.",
-                "partial_saved": True
-              }))
-            else:
-              # 유효하지 않은 답변은 저장하지 않음
-              if "<think>" in cached_answer and "</think>" not in cached_answer:
-                message = "응답 생성이 취소되었습니다. (생성 중이던 사고 과정이 완성되지 않아 저장되지 않았습니다.)"
-              else:
-                message = "응답 생성이 취소되었습니다. 답변이 너무 짧아 저장되지 않았습니다."
-              
-              logger.info(f"Room {room_id}: Ollama API 호출 취소 - 유효하지 않은 답변 ({len(cached_answer)} 자)")
-              
-              # 취소 메시지 발행 (저장하지 않음)
-              await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                "cancelled": True,
-                "message": message,
-                "partial_saved": False
-              }))
-          else:
-            # 답변이 없는 경우
-            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-              "cancelled": True,
-              "message": "응답 생성이 취소되었습니다.",
-              "partial_saved": False
-            }))
-        
-          return
-          
-        try:
-          async with aiohttp.ClientSession() as session:
-            url = f"{settings.OLLAMA_API_BASE_URL}/api/chat"
-            ollama_request["stream"] = True
-            timeout = aiohttp.ClientTimeout(total=30) # 요청 타임아웃 설정 (30초)
-            
-            async with session.post(url, json=ollama_request, timeout=timeout) as response:
-              # 네트워크 오류 시뮬레이션
-              if random.random() < 0.8:
-                logger.info(f"Room {room_id}: 네트워크 오류 시뮬레이션 발생")
-                raise aiohttp.ClientError("Simulated network error")
-              
-              if response.status != 200:
-                error_text = await response.text()
-                logger.error(f"Room {room_id}: Ollama API 오류 - {response.status}, {error_text}")
-                
-                # 재시도 여부 확인
-                if current_retry < max_retries:
-                  logger.info(f"Room {room_id}: Ollama API 재시도 ({current_retry + 1}/{max_retries})")
-                  current_retry += 1
-                  
-                  # 오류 알림 전송
-                  await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                    "warning": True,
-                    "message": f"API 요청 실패, 재시도 중입니다 ({current_retry}/{max_retries})..."
-                  }))
-                  
-                  # 잠시 대기 후 재시도
-                  await asyncio.sleep(1)
-                  continue
-                else:
-                  # 마지막 시도에서도 실패한 경우
-                  error_message = json.dumps({
-                    "error": True,
-                    "error_type": ERROR_TYPE_MODEL,
-                    "message": f"API 오류 ({response.status}): {error_text}"
-                  })
-                  await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
-                  return
-              
-              # 응답 청크 처리
-              async for chunk in response.content:
-                # 취소 여부 확인
-                if room_id in cancelled_chats and cancelled_chats[room_id]:
-                  logger.info(f"Room {room_id}: 응답 생성 중 취소됨")
-                  
-                  # 강제 취소인지 확인
-                  is_force_stopped = room_id in force_stopped_chats and force_stopped_chats[room_id]
-                  
-                  # 강제 취소인 경우, 저장하지 않고 메시지만 발행
-                  if is_force_stopped:
-                    logger.info(f"Room {room_id}: 응답 청크 처리 중 강제 취소로 인해 저장하지 않음")
-                    
-                    # 강제 취소 메시지 발행
-                    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                      "force_stopped": True,
-                      "cancelled": True,
-                      "message": "응답 생성이 강제 중단되었습니다. 답변이 저장되지 않았습니다.",
-                      "partial_saved": False
-                    }))
-                    
-                    # 인메모리 데이터 삭제
-                    pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
-                    return
-                  
-                  # 취소 시 cancel_chat 함수에서 저장 처리
-                  is_valid = await ChatService.is_valid_answer_for_storage(full_answer)
-                  
-                  if not is_valid:
-                    # 유효하지 않은 답변인 경우 (너무 짧거나 <think> 태그 불완전)
-                    if full_answer and "<think>" in full_answer and "</think>" not in full_answer:
-                      message = "응답 생성이 취소되었습니다. (생성 중이던 사고 과정이 완성되지 않아 저장되지 않았습니다.)"
-                      logger.info(f"Room {room_id}: <think> 태그가 닫히지 않아 저장하지 않음")
-                    else:
-                      message = "응답 생성이 취소되었습니다."
-                    
-                    # 취소 메시지 발행 (저장 없음)
-                    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                      "cancelled": True,
-                      "message": message,
-                      "partial_saved": False
-                    }))
-                  else:
-                    # 충분한 길이의 유효한 답변이 있는 경우, cancel_chat 함수에서 저장
-                    logger.info(f"Room {room_id}: 응답 생성 중 취소 - 저장은 cancel_chat에서 처리 ({len(full_answer)} 자)")
-                    
-                    # 인메모리에 데이터 업데이트 - 최종 상태 저장 
-                    pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", full_answer, MESSAGE_EXPIRE_TIME)
-                    
-                    # 취소 메시지 발행
-                    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                      "cancelled": True,
-                      "message": "응답 생성이 취소되었습니다. 지금까지 생성된 답변이 저장되었습니다.",
-                      "partial_saved": True,
-                      "partial_length": len(full_answer)
-                    }))
-                  
-                  return
-                
-                chunk_text = chunk.decode('utf-8').strip()
-                if not chunk_text:
-                  continue
-                
-                try:
-                  chunk_data = json.loads(chunk_text)
-                  
-                  # 완료 메시지인 경우
-                  if "done" in chunk_data and chunk_data["done"]:
-                    # 완료 상태 기록
-                    completed_chats[room_id] = True
-                    
-                    # 최종 답변을 데이터베이스에 저장
-                    assistant_message = ChatAssistantMessageType(
-                      room_id=room_id,
-                      content=full_answer,
-                      model=model
-                    )
-                    # 비동기 태스크로 저장 (db=None으로 함수 내에서 새 세션 생성)
-                    asyncio.create_task(ChatService.save_assistant_message(None, assistant_message, commit=True))
-                    
-                    # 완료 메시지 발행
-                    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                      "full": full_answer,
-                      "model": model,
-                      "created_at": datetime.now().isoformat(),
-                      "done": True
-                    }))
-                    
-                    logger.info(f"Room {room_id}: Ollama API 응답 처리 완료")
-                    return
-                  
-                  # 텍스트 응답만 처리
-                  if "message" in chunk_data and "content" in chunk_data["message"]:
-                    delta = chunk_data["message"]["content"]
-                    full_answer += delta
-                    
-                    # Redis에 현재까지의 전체 답변 저장 및 증분 청크 발행
-                    pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", full_answer, MESSAGE_EXPIRE_TIME)
-                    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-                      "delta": delta,
-                      "full": full_answer,
-                      "model": model
-                    }))
-                except json.JSONDecodeError:
-                  logger.warning(f"Room {room_id}: JSON 파싱 오류 - {chunk_text}")
-                  continue
-              
-              # 루프를 성공적으로 완료하면 재시도 루프 종료
-              break
-        
-        except aiohttp.ClientError as e:
-          logger.error(f"Room {room_id}: 네트워크 오류 발생 - {str(e)}")
-          
-          # 재시도 여부 확인
-          if current_retry < max_retries:
-            logger.info(f"Room {room_id}: 네트워크 오류 재시도 ({current_retry + 1}/{max_retries})")
-            current_retry += 1
-            
-            # 재시도 알림 전송
-            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-              "warning": True,
-              "message": f"네트워크 오류, 재시도 중입니다 ({current_retry}/{max_retries})..."
-            }))
-            
-            # 잠시 대기 후 재시도
-            await asyncio.sleep(1)
-          else:
-            # 최대 재시도 횟수 초과
-            error_message = json.dumps({
-              "error": True,
-              "error_type": ERROR_TYPE_NETWORK,
-              "message": "네트워크 오류, 최대 재시도 횟수 초과"
-            })
-            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
-            return
-
-        except asyncio.TimeoutError:
-          logger.warning(f"Room {room_id}: Ollama API 요청 타임아웃")
-          
-          # 재시도 여부 확인
-          if current_retry < max_retries:
-            logger.info(f"Room {room_id}: Ollama API 타임아웃 재시도 ({current_retry + 1}/{max_retries})")
-            current_retry += 1
-            
-            # 타임아웃 알림 전송
-            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-              "warning": True,
-              "message": f"요청 시간 초과, 재시도 중입니다 ({current_retry}/{max_retries})..."
-            }))
-            
-            # 잠시 대기 후 재시도
-            await asyncio.sleep(1)
-          else:
-            # 최대 재시도 횟수 초과
-            error_message = json.dumps({
-              "error": True,
-              "error_type": ERROR_TYPE_TIMEOUT,
-              "message": "요청 시간이 반복적으로 초과되었습니다. 나중에 다시 시도해주세요."
-            })
-            await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
-            return
-      
+      # API 호출 처리
+      return await ChatService._process_ollama_api_request(room_id, ollama_request, model)
     except Exception as e:
-      logger.error(f"Room {room_id}: 답변 생성 중 오류 발생 - {str(e)}")
-      logger.error(traceback.format_exc())
-      
-      # 오류 메시지 PubSub에 저장
-      error_message = f"오류가 발생했습니다: {str(e)}"
-      
-      # 오류 유형 추정
-      error_type = ERROR_TYPE_UNKNOWN
-      error_str = str(e).lower()
-      if "network" in error_str or "connect" in error_str:
-        error_type = ERROR_TYPE_NETWORK
-      elif "timeout" in error_str or "시간 초과" in error_str:
-        error_type = ERROR_TYPE_TIMEOUT
-      elif "model" in error_str or "load" in error_str:
-        error_type = ERROR_TYPE_MODEL
-      
-      # 생성된 답변이 있을 경우 저장 (오류 발생 시에도)
-      if full_answer and len(full_answer) >= 10:
-        logger.info(f"Room {room_id}: 오류 발생했지만 생성된 답변 있음 ({len(full_answer)} 자) - 인메모리에 저장")
-        # 인메모리에 저장 - cancel_chat 함수에서 처리하도록
-        pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", full_answer, MESSAGE_EXPIRE_TIME)
-      
-      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-        "error": True,
-        "error_type": error_type,
-        "message": error_message
-      }))
+      # 예외 처리
+      await ChatService._handle_general_exception(room_id, full_answer, e)
     finally:
       # 활성 채팅 목록에서 제거
       if room_id in active_chats:
         del active_chats[room_id]
+
+  @staticmethod
+  async def _initialize_chat_session(room_id: str, model: str):
+    """채팅 세션 초기화 및 메타데이터 설정"""
+    # 현재 진행 중인 응답 생성 태스크 등록
+    active_chats[room_id] = asyncio.current_task()
+    
+    # 이전 응답이 있을 경우 삭제
+    pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
+    
+    # 초기 메타데이터 저장 - 모델명과 요청 시작 시간
+    metadata = {
+      "model": model,
+      "created_at": datetime.now().isoformat()
+    }
+    pubsub_client.set(f"{METADATA_KEY_PREFIX}{room_id}", json.dumps(metadata), MESSAGE_EXPIRE_TIME)
+    
+    # API 호출 시작 알림
+    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+      "status": "generating",
+      "model": model,
+      "timestamp": datetime.now().isoformat()
+    }))
+
+  @staticmethod
+  async def _process_ollama_api_request(room_id: str, ollama_request: dict, model: str):
+    """Ollama API 요청 처리 및 재시도 로직"""
+    current_retry = 0
+    full_answer = ""
+    
+    while current_retry <= MAX_RETRIES:
+      # 취소 여부 확인
+      if await ChatService._check_if_cancelled(room_id, full_answer):
+        return
+      
+      try:
+        # API 요청 실행
+        result = await ChatService._execute_api_request(room_id, ollama_request, model, full_answer)
+        if result is not None:  # 정상적으로 완료되었거나 취소되었을 경우
+          return result
+        break
+      
+      except aiohttp.ClientError as e:
+        # 네트워크 오류 처리
+        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_NETWORK, str(e)):
+          return
+        current_retry += 1
+      
+      except asyncio.TimeoutError:
+        # 타임아웃 오류 처리
+        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_TIMEOUT):
+          return
+        current_retry += 1
+
+  @staticmethod
+  async def _check_if_cancelled(room_id: str, full_answer: str = ""):
+    """취소 여부 확인 및 처리"""
+    if room_id in cancelled_chats and cancelled_chats[room_id]:
+      logger.info(f"Room {room_id}: Ollama API 호출 취소됨")
+      
+      # 강제 취소인지 확인
+      is_force_stopped = room_id in force_stopped_chats and force_stopped_chats[room_id]
+      
+      if is_force_stopped:
+        # 강제 취소 처리
+        await ChatService._handle_force_stop(room_id)
+        return True
+      
+      # 일반 취소 처리
+      cached_answer = await ChatService.get_cached_answer(room_id) or full_answer
+      await ChatService._handle_normal_cancellation(room_id, cached_answer)
+      return True
+    
+    return False
+
+  @staticmethod
+  async def _handle_force_stop(room_id: str):
+    """강제 취소 처리"""
+    logger.info(f"Room {room_id}: 강제 취소로 인해 저장하지 않음")
+    
+    # 강제 취소 메시지 발행
+    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+      "force_stopped": True,
+      "cancelled": True,
+      "message": "응답 생성이 강제 중단되었습니다. 답변이 저장되지 않았습니다.",
+      "partial_saved": False
+    }))
+    
+    # 인메모리 데이터 삭제
+    pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
+
+  @staticmethod
+  async def _handle_normal_cancellation(room_id: str, cached_answer: str):
+    """일반 취소 처리"""
+    if not cached_answer:
+      # 답변이 없는 경우
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "cancelled": True,
+        "message": "응답 생성이 취소되었습니다.",
+        "partial_saved": False
+      }))
+      return
+    
+    # 유효성 검사
+    is_valid = await ChatService.is_valid_answer_for_storage(cached_answer)
+    
+    if is_valid:
+      logger.info(f"Room {room_id}: Ollama API 호출 취소 - cancel_chat에서 저장 처리함 ({len(cached_answer)} 자)")
+      
+      # 취소 메시지 발행 (부분 저장 알림만)
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "cancelled": True,
+        "message": "응답 생성이 취소되었습니다. 지금까지 생성된 답변이 저장되었습니다.",
+        "partial_saved": True
+      }))
+    else:
+      # 유효하지 않은 답변은 저장하지 않음
+      message = ChatService._get_invalid_answer_message(cached_answer)
+      logger.info(f"Room {room_id}: Ollama API 호출 취소 - 유효하지 않은 답변 ({len(cached_answer)} 자)")
+      
+      # 취소 메시지 발행 (저장하지 않음)
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "cancelled": True,
+        "message": message,
+        "partial_saved": False
+      }))
+
+  @staticmethod
+  def _get_invalid_answer_message(answer: str):
+    """유효하지 않은 답변 메시지 생성"""
+    if answer and "<think>" in answer and "</think>" not in answer:
+      return "응답 생성이 취소되었습니다. (생성 중이던 사고 과정이 완성되지 않아 저장되지 않았습니다.)"
+    return "응답 생성이 취소되었습니다. 답변이 너무 짧아 저장되지 않았습니다."
+
+  @staticmethod
+  async def _execute_api_request(room_id: str, ollama_request: dict, model: str, full_answer: str = ""):
+    """API 요청 실행 및 응답 처리"""
+    async with aiohttp.ClientSession() as session:
+      url = f"{settings.OLLAMA_API_BASE_URL}/api/chat"
+      ollama_request["stream"] = True
+      timeout = aiohttp.ClientTimeout(total=30)  # 요청 타임아웃 설정 (30초)
+      
+      async with session.post(url, json=ollama_request, timeout=timeout) as response:
+        # TEST 코드 시작 - 실제 배포시 제거
+        # await ChatService._run_test_simulations(room_id)
+        
+        if response.status != 200:
+          return await ChatService._handle_api_error_response(room_id, response)
+        
+        # 응답 청크 처리
+        result = await ChatService._process_response_chunks(room_id, response, model, full_answer)
+        return result
+
+  @staticmethod
+  async def _run_test_simulations(room_id: str):
+    """테스트 시뮬레이션 코드 - 실제 배포시 제거"""
+    # # 네트워크 오류 시뮬레이션
+    # if random.random() < 0.5:
+    #   logger.info(f"Room {room_id}: 네트워크 오류 시뮬레이션 발생")
+    #   raise aiohttp.ClientError("Simulated network error")
+    
+    # # 타임아웃 시뮬레이션
+    # if random.random() < 1:
+    #   logger.info(f"Room {room_id}: 타임아웃 시뮬레이션 발생")
+    #   await asyncio.sleep(31)
+    
+    # # 모델 오류 시뮬레이션
+    # if random.random() < 0.3:
+    #   logger.info(f"Room {room_id}: Ollama API 모델 오류 시뮬레이션 발생")
+    #   raise Exception("Simulated model error: Invalid model name")
+    
+    # # 기타 오류 시뮬레이션
+    # if random.random() < 0.1:
+    #   logger.info(f"Room {room_id}: 기타 오류 시뮬레이션 발생")
+    #   raise Exception("Simulated unknown error")
+
+  @staticmethod
+  async def _handle_api_error_response(room_id: str, response):
+    """API 오류 응답 처리"""
+    error_text = await response.text()
+    logger.error(f"Room {room_id}: Ollama API 오류 - {response.status}, {error_text}")
+    
+    # 오류 메시지 발행
+    error_message = json.dumps({
+      "error": True,
+      "error_type": ERROR_TYPE_MODEL,
+      "message": f"API 오류 ({response.status}): {error_text}"
+    })
+    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
+    return None
+
+  @staticmethod
+  async def _handle_retry(room_id: str, current_retry: int, error_type: str, error_detail: str = ""):
+    """재시도 처리 로직"""
+    if current_retry < MAX_RETRIES:
+      retry_num = current_retry + 1
+      logger.info(f"Room {room_id}: {error_type} 오류 재시도 ({retry_num} / {MAX_RETRIES})")
+      
+      # 재시도 메시지 결정
+      if error_type == ERROR_TYPE_NETWORK:
+        message = f"네트워크 오류, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
+      elif error_type == ERROR_TYPE_TIMEOUT:
+        message = f"요청 시간 초과, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
+      else:
+        message = f"오류 발생, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
+      
+      # 재시도 알림 전송
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "warning": True,
+        "message": message
+      }))
+      
+      # 잠시 대기 후 재시도
+      await asyncio.sleep(1)
+      return True
+    else:
+      # 최대 재시도 횟수 초과 시 오류 메시지
+      if error_type == ERROR_TYPE_NETWORK:
+        message = "네트워크 오류, 재시도 최대 횟수 초과, Ollama를 확인해주세요."
+      elif error_type == ERROR_TYPE_TIMEOUT:
+        message = "요청 시간이 초과되었습니다. 나중에 다시 시도해주세요."
+      else:
+        message = f"오류 발생, 재시도 최대 횟수 초과: {error_detail}"
+      
+      error_message = json.dumps({
+        "error": True,
+        "error_type": error_type,
+        "message": message
+      })
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
+      return False
+
+  @staticmethod
+  async def _process_response_chunks(room_id: str, response, model: str, full_answer: str = ""):
+    """응답 청크 처리"""
+    current_answer = full_answer
+    
+    async for chunk in response.content:
+      # 취소 여부 확인
+      if room_id in cancelled_chats and cancelled_chats[room_id]:
+        # 취소 처리
+        await ChatService._handle_cancellation_during_streaming(room_id, current_answer)
+        return None
+      
+      chunk_text = chunk.decode('utf-8').strip()
+      if not chunk_text:
+        continue
+      
+      # TEST: 콘텐츠 파싱 오류 시뮬레이션 (실제 배포시 제거)
+      # if random.random() < 0.1:
+      #   logger.info(f"Room {room_id}: 콘텐츠 파싱 오류 시뮬레이션 발생")
+      #   chunk_text = "invalid_json_string"
+      
+      try:
+        chunk_data = json.loads(chunk_text)
+        
+        # 완료 메시지인 경우
+        if "done" in chunk_data and chunk_data["done"]:
+          await ChatService._handle_completion(room_id, current_answer, model)
+          return True
+        
+        # 텍스트 응답 처리
+        if "message" in chunk_data and "content" in chunk_data["message"]:
+          delta = chunk_data["message"]["content"]
+          current_answer += delta
+          pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", current_answer, MESSAGE_EXPIRE_TIME)
+          await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+            "delta": delta,
+            "full": current_answer,
+            "model": model
+          }))
+      except json.JSONDecodeError:
+        logger.warning(f"Room {room_id}: JSON 파싱 오류 - {chunk_text}")
+        await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+          "error": True,
+          "error_type": ERROR_TYPE_CONTENT,
+          "message": "답변 도중 오류가 발생했습니다."
+        }))
+        continue
+    
+    return current_answer
+
+  @staticmethod
+  async def _handle_cancellation_during_streaming(room_id: str, full_answer: str):
+    """응답 스트리밍 중 취소 처리"""
+    logger.info(f"Room {room_id}: 응답 생성 중 취소됨")
+    
+    # 강제 취소인지 확인
+    is_force_stopped = room_id in force_stopped_chats and force_stopped_chats[room_id]
+    
+    if is_force_stopped:
+      # 강제 취소 처리
+      await ChatService._handle_force_stop(room_id)
+      return
+    
+    # 취소 시 저장 여부 결정
+    is_valid = await ChatService.is_valid_answer_for_storage(full_answer)
+    
+    if not is_valid:
+      # 유효하지 않은 답변 처리
+      message = ChatService._get_invalid_answer_message(full_answer)
+      logger.info(f"Room {room_id}: 유효하지 않은 답변으로 저장하지 않음 ({len(full_answer)} 자)")
+      
+      # 취소 메시지 발행 (저장 없음)
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "cancelled": True,
+        "message": message,
+        "partial_saved": False
+      }))
+    else:
+      # 유효한 답변 처리
+      logger.info(f"Room {room_id}: 응답 생성 중 취소 - 저장은 cancel_chat에서 처리 ({len(full_answer)} 자)")
+      
+      # 인메모리에 데이터 업데이트
+      pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", full_answer, MESSAGE_EXPIRE_TIME)
+      
+      # 취소 메시지 발행
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "cancelled": True,
+        "message": "응답 생성이 취소되었습니다. 지금까지 생성된 답변이 저장되었습니다.",
+        "partial_saved": True,
+        "partial_length": len(full_answer)
+      }))
+
+  @staticmethod
+  async def _handle_completion(room_id: str, full_answer: str, model: str):
+    """응답 완료 처리"""
+    # 완료 상태 기록
+    completed_chats[room_id] = True
+    
+    # 최종 답변을 데이터베이스에 저장
+    assistant_message = ChatAssistantMessageType(
+      room_id=room_id,
+      content=full_answer,
+      model=model
+    )
+    # 비동기 태스크로 저장
+    asyncio.create_task(ChatService.save_assistant_message(None, assistant_message, commit=True))
+    
+    # 완료 메시지 발행
+    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+      "full": full_answer,
+      "model": model,
+      "created_at": datetime.now().isoformat(),
+      "done": True
+    }))
+    
+    logger.info(f"Room {room_id}: Ollama API 응답 처리 완료")
+
+  @staticmethod
+  async def _handle_general_exception(room_id: str, full_answer: str, exception: Exception):
+    """일반 예외 처리"""
+    logger.error(f"Room {room_id}: 답변 생성 중 오류 발생 - {str(exception)}")
+    logger.error(traceback.format_exc())
+    
+    # 오류 메시지
+    error_message = f"오류가 발생했습니다: {str(exception)}"
+    
+    # 오류 유형 추정
+    error_type = ChatService._determine_error_type(str(exception))
+    
+    # 생성된 답변이 있을 경우 저장 (오류 발생 시에도)
+    if full_answer and len(full_answer) >= 10:
+      logger.info(f"Room {room_id}: 오류 발생했지만 생성된 답변 있음 ({len(full_answer)} 자) - 인메모리에 저장")
+      # 인메모리에 저장 - cancel_chat 함수에서 처리하도록
+      pubsub_client.set(f"{ANSWER_KEY_PREFIX}{room_id}", full_answer, MESSAGE_EXPIRE_TIME)
+    
+    # 오류 메시지 발행
+    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+      "error": True,
+      "error_type": error_type,
+      "message": error_message
+    }))
+
+  @staticmethod
+  def _determine_error_type(error_str: str):
+    """오류 유형 추정"""
+    error_str = error_str.lower()
+    if "network" in error_str or "connect" in error_str:
+      return ERROR_TYPE_NETWORK
+    elif "timeout" in error_str or "시간 초과" in error_str:
+      return ERROR_TYPE_TIMEOUT
+    elif "model" in error_str or "load" in error_str:
+      return ERROR_TYPE_MODEL
+    return ERROR_TYPE_UNKNOWN
 
   @staticmethod
   async def get_cached_answer(room_id: str):
@@ -479,13 +554,9 @@ class ChatService:
     if not answer or len(answer) < 10:
       return False
       
-    # <think> 태그 처리 - 열려있는데 닫히지 않은 경우 저장하지 않음
     if "<think>" in answer and "</think>" not in answer:
       return False
     
-    # 추론 과정만 있거나, 완성되지 않은 답변인지 검사
-    # 추론 과정은 <think>...</think> 형식으로 되어 있음
-    # 추론 과정만 있거나 추론 과정 이후 내용이 매우 짧은 경우(20자 미만) 저장하지 않음
     if "<think>" in answer and "</think>" in answer:
       think_end_pos = answer.rfind("</think>") + len("</think>")
       remaining_content = answer[think_end_pos:].strip()
@@ -590,18 +661,6 @@ class ChatService:
     return is_active
     
   @staticmethod
-  async def _clear_cancel_and_force_stop_state(room_id: str, delay: int):
-    """일정 시간 후 취소 및 강제 취소 상태 초기화"""
-    await asyncio.sleep(delay)
-    if room_id in cancelled_chats:
-      del cancelled_chats[room_id]
-    if room_id in force_stopped_chats:
-      del force_stopped_chats[room_id]
-    if room_id in completed_chats:
-      del completed_chats[room_id]
-    logger.info(f"Room {room_id}: 취소 및 강제 취소 상태 초기화 완료")
-    
-  @staticmethod
   async def force_stop_chat(room_id: str):
     """채팅 응답 강제 중단 (DB 저장하지 않음)"""
     logger.info(f"Room {room_id}: 채팅 응답 강제 중단 요청")
@@ -629,4 +688,14 @@ class ChatService:
     
     return is_active
       
-      
+  @staticmethod
+  async def _clear_cancel_and_force_stop_state(room_id: str, delay: int):
+    """일정 시간 후 취소 및 강제 취소 상태 초기화"""
+    await asyncio.sleep(delay)
+    if room_id in cancelled_chats:
+      del cancelled_chats[room_id]
+    if room_id in force_stopped_chats:
+      del force_stopped_chats[room_id]
+    if room_id in completed_chats:
+      del completed_chats[room_id]
+    logger.info(f"Room {room_id}: 취소 및 강제 취소 상태 초기화 완료")

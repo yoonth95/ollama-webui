@@ -15,12 +15,17 @@ const ChatOptimisticRenderer = ({ sseData, userChatData, isReceivingResponse }: 
 
       {sseData.error ? (
         <BotChatError errorType={sseData.errorType} errorMessage={sseData.errorMessage} />
-      ) : isReceivingResponse && !sseData.response ? (
+      ) : isReceivingResponse && !sseData.content ? (
         <div className="py-2">
           <LoaderCircle className="h-6 w-6 animate-spin" />
         </div>
-      ) : sseData.response ? (
-        <BotChatLayout content={sseData.response} modelName={sseData.model || ""} createdAt={sseData.createdAt || ""} />
+      ) : sseData.content ? (
+        <BotChatLayout
+          isRetry={sseData.isRetry}
+          content={sseData.content}
+          modelName={sseData.model || ""}
+          createdAt={sseData.createdAt || ""}
+        />
       ) : null}
     </>
   );

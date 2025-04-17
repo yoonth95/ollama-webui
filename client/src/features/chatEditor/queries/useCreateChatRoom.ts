@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import { useShallow } from "zustand/shallow";
-import { queryKeys, useCustomMutation } from "@/shared/api";
 import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
+import { queryKeys, useCustomMutation } from "@/shared/api";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { ImageDataType } from "@/shared/types/chatMessageType";
 import {
@@ -65,7 +64,6 @@ const useCreateChatRoom = () => {
       },
       onError: (error) => {
         console.error("채팅방 생성 오류:", error);
-        toast.error("채팅방을 생성하는 중 오류가 발생했습니다.");
         clearUserChatData();
         deactivateOptimisticUI();
       },
