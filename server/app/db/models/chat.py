@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import JSON, Column, String, Text, ForeignKey, DateTime, event
+from sqlalchemy import JSON, Column, String, Text, ForeignKey, DateTime, Integer, event
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 from app.utils.datetime_utils import get_kst_time
@@ -14,6 +14,9 @@ class ChatMessage(Base):
   model = Column(String, nullable=False)  # 모델 이름
   content = Column(Text, nullable=False)  # 마크다운 텍스트 (길어질 수 있음)
   images = Column(JSON, nullable=True)  # base64 인코딩된 이미지 문자열 리스트, 없을 수도 있음
+  # status = Column(String, nullable=True)  # 메시지 상태 (pending, completed, failed)
+  # error_message = Column(String, nullable=True)  # 오류 메시지
+  # retry_count = Column(Integer, nullable=False, default=0)  # 재시도 횟수
   created_at = Column(DateTime(timezone=True), default=get_kst_time)  # 생성 시각
   updated_at = Column(DateTime(timezone=True), default=get_kst_time)  # 수정 시각
 
