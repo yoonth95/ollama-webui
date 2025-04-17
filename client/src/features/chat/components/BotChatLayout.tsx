@@ -3,14 +3,16 @@ import { ko } from "date-fns/locale";
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
 import { BotThinkingBox, BotChatToolbar } from "@/features/chat/components";
 import useThinkContent from "@/features/chat/hooks/useThinkContent";
+import { LoaderCircle } from "lucide-react";
 
 interface BotChatLayoutProps {
+  isRetry?: boolean;
   content: string;
   modelName?: string;
   createdAt?: string | Date;
 }
 
-const BotChatLayout = ({ content, modelName, createdAt }: BotChatLayoutProps) => {
+const BotChatLayout = ({ isRetry, content, modelName, createdAt }: BotChatLayoutProps) => {
   const { thinkContent, mainContent, isThinking } = useThinkContent(content);
 
   return (
@@ -27,13 +29,16 @@ const BotChatLayout = ({ content, modelName, createdAt }: BotChatLayoutProps) =>
           )}
         </div>
 
-        {/* 생각 과정 표시 */}
+        {/* 추론 과정 표시 */}
         {isThinking && thinkContent && <BotThinkingBox content={thinkContent} />}
 
         {/* 본문 내용 */}
-        {mainContent ? (
-          <div className="px-2 py-2 break-words">
-            <MarkdownViewer content={mainContent} />
+        {mainContent || content ? (
+          <div className="flex items-center py-2">
+            {isRetry && <LoaderCircle className="h-5 w-5 animate-spin" />}
+            <div className="px-2 break-words">
+              <MarkdownViewer content={mainContent} />
+            </div>
           </div>
         ) : (
           <div className="w-fit py-2">

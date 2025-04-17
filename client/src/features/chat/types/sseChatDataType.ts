@@ -1,10 +1,11 @@
 import { z } from "zod";
 
-const SSEChatErrorTypeSchema = z.enum(["network", "timeout", "model", "content", "connection", "unknown"]);
+const SSEChatErrorTypeSchema = z.enum(["NETWORK", "TIMEOUT", "MODEL", "CONTENT", "CONNECTION", "UNKNOWN"]);
 
 export const SSEChatDataTypeSchema = z.object({
+  isRetry: z.boolean().optional(),
   isReceiving: z.boolean(),
-  response: z.string(),
+  content: z.string(),
   model: z.string().optional(),
   createdAt: z.string().optional(),
   error: z.boolean().optional(),
