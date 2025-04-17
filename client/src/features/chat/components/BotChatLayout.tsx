@@ -36,9 +36,11 @@ const BotChatLayout = ({ content, modelName, createdAt }: BotChatLayoutProps) =>
             <MarkdownViewer content={mainContent} />
           </div>
         ) : (
-          <div className="w-fit py-2">
-            <i>응답 없음.</i>
-          </div>
+          !content && (
+            <div className="w-fit py-2">
+              <i>응답 없음.</i>
+            </div>
+          )
         )}
 
         <BotChatToolbar content={mainContent || "응답 없음."} />
