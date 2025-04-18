@@ -11,8 +11,9 @@ class ChatCrud:
       role="user",
       model=user_message.model,
       content=user_message.content,
-      images=user_message.images
     )
+    if user_message.images:
+      chat.images = user_message.images
     
     db.add(chat)
     
