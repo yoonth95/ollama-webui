@@ -1,6 +1,5 @@
 import { queryKeys, useCustomQuery } from "@/shared/api";
 import { ChatMessageArraySchema, ChatMessageType } from "@/shared/types/chatMessageType";
-import { DisplayType } from "@/shared/types/apiType";
 
 /**
  * 채팅 메시지 히스토리를 가져오는 훅
@@ -13,7 +12,6 @@ export const useGetChatMessages = (chatRoomId: string, isOptimistic: boolean) =>
     queryKey: queryKeys.chats.messages(chatRoomId),
     endpoint: `/chat/${chatRoomId}`,
     schema: ChatMessageArraySchema,
-    errorOptions: { type: DisplayType.Display },
     options: {
       staleTime: 0,
       enabled: !!chatRoomId && !isOptimistic,
