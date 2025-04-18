@@ -318,13 +318,22 @@ class ChatService:
     error_text = await response.text()
     logger.error(f"Room {room_id}: Ollama API 오류 - {response.status}, {error_text}")
     
+    error_message = f"API 오류 ({response.status}): {error_text}"
+    
     # 오류 메시지 발행
-    error_message = json.dumps({
+    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
       "error": True,
       "error_type": ERROR_TYPE_MODEL,
-      "message": f"API 오류 ({response.status}): {error_text}"
-    })
-    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
+      "message": error_message
+    }))
+    
+    # 메타데이터에서 모델 정보 가져오기
+    metadata = await ChatService.get_metadata(room_id)
+    model = metadata.get("model", "unknown") if metadata else "unknown"
+    
+    # 오류 정보 DB에 저장
+    await ChatService._save_error_to_db(room_id, ERROR_TYPE_MODEL, error_message, model)
+    
     return None
 
   @staticmethod
@@ -366,12 +375,21 @@ class ChatService:
         "message": message
       })
       await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
+      
+      # 메타데이터에서 모델 정보 가져오기
+      metadata = await ChatService.get_metadata(room_id)
+      model = metadata.get("model", "unknown") if metadata else "unknown"
+      
+      # 오류 정보 DB에 저장
+      await ChatService._save_error_to_db(room_id, error_type, message, model)
+      
       return False
 
   @staticmethod
   async def _process_response_chunks(room_id: str, response, model: str, full_answer: str = ""):
     """응답 청크 처리"""
     current_answer = full_answer
+    current_retry = 0
     
     async for chunk in response.content:
       # 취소 여부 확인
@@ -385,9 +403,9 @@ class ChatService:
         continue
       
       # TEST: 콘텐츠 파싱 오류 시뮬레이션 (실제 배포시 제거)
-      # if random.random() < 0.1:
-      #   logger.info(f"Room {room_id}: 콘텐츠 파싱 오류 시뮬레이션 발생")
-      #   chunk_text = "invalid_json_string"
+      if random.random() < 0.7:
+        logger.info(f"Room {room_id}: 콘텐츠 파싱 오류 시뮬레이션 발생")
+        chunk_text = "invalid_json_string"
       
       try:
         chunk_data = json.loads(chunk_text)
@@ -407,7 +425,18 @@ class ChatService:
             "full": current_answer,
             "model": model
           }))
-      except json.JSONDecodeError:
+      except json.JSONDecodeError as e:
+        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_CONTENT, str(e)):
+          # 최대 재시도 횟수 초과 시 오류 정보를 DB에 저장
+          await ChatService._save_error_to_db(
+            room_id, 
+            ERROR_TYPE_CONTENT, 
+            f"JSON 파싱 오류: {str(e)}", 
+            model
+          )
+          return
+        current_retry += 1
+        
         logger.warning(f"Room {room_id}: JSON 파싱 오류 - {chunk_text}")
         await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
           "error": True,
@@ -470,7 +499,9 @@ class ChatService:
     assistant_message = ChatAssistantMessageType(
       room_id=room_id,
       content=full_answer,
-      model=model
+      model=model,
+      error_type=None,
+      error_message=None
     )
     # 비동기 태스크로 저장
     asyncio.create_task(ChatService.save_assistant_message(None, assistant_message, commit=True))
@@ -509,6 +540,13 @@ class ChatService:
       "error_type": error_type,
       "message": error_message
     }))
+    
+    # 메타데이터에서 모델 정보 가져오기
+    metadata = await ChatService.get_metadata(room_id)
+    model = metadata.get("model", "unknown") if metadata else "unknown"
+    
+    # 오류 정보 DB에 저장
+    await ChatService._save_error_to_db(room_id, error_type, error_message, model)
 
   @staticmethod
   def _determine_error_type(error_str: str):
@@ -612,7 +650,9 @@ class ChatService:
       assistant_message = ChatAssistantMessageType(
         room_id=room_id,
         content=cached_answer,
-        model=model
+        model=model,
+        error_type=None,
+        error_message=None
       )
       
       # 답변 저장 작업 실행 (비동기 태스크 사용하지 않고 즉시 실행)
@@ -699,3 +739,25 @@ class ChatService:
     if room_id in completed_chats:
       del completed_chats[room_id]
     logger.info(f"Room {room_id}: 취소 및 강제 취소 상태 초기화 완료")
+
+  @staticmethod
+  async def _save_error_to_db(room_id: str, error_type: str, error_message: str, model: str):
+    """오류 정보를 데이터베이스에 저장"""
+    logger.info(f"Room {room_id}: 오류 정보 저장 시작 (error_type: {error_type})")
+    try:
+      db = SessionLocal()
+      error_assistant_message = ChatAssistantMessageType(
+        room_id=room_id,
+        content="",  # 빈 문자열로 설정
+        model=model,
+        error_type=error_type,
+        error_message=error_message
+      )
+      
+      await ChatService.save_assistant_message(db, error_assistant_message, commit=True)
+      logger.info(f"Room {room_id}: 오류 정보 DB 저장 성공 (error_type: {error_type})")
+    except Exception as e:
+      logger.error(f"Room {room_id}: 오류 정보 저장 실패 - {str(e)}")
+    finally:
+      if 'db' in locals():
+        db.close()

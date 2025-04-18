@@ -20,6 +20,8 @@ class ChatAssistantMessageType(BaseModel):
   room_id: str
   content: str
   model: str
+  error_type: Optional[str] = None
+  error_message: Optional[str] = None
 
 class ChatHistoryResponseType(TimeModelMixin):
   """채팅 내역 응답 타입"""
@@ -29,6 +31,8 @@ class ChatHistoryResponseType(TimeModelMixin):
   model: str
   content: str
   images: Optional[List[ImageData]] = None
+  error_type: Optional[str] = None
+  error_message: Optional[str] = None
   created_at: datetime
   updated_at: datetime
 

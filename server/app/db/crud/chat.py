@@ -30,6 +30,8 @@ class ChatCrud:
       role="assistant",
       model=assistant_message.model,
       content=assistant_message.content,
+      error_type=assistant_message.error_type,
+      error_message=assistant_message.error_message
     )
     
     db.add(chat)
