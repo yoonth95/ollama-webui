@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const SSEChatErrorTypeSchema = z.enum(["NETWORK", "TIMEOUT", "MODEL", "CONTENT", "CONNECTION", "UNKNOWN"]);
+export const SSEChatErrorTypeSchema = z.enum(["NETWORK", "TIMEOUT", "MODEL", "CONTENT", "CONNECTION", "UNKNOWN"]);
 
 export const SSEChatDataTypeSchema = z.object({
   isRetry: z.boolean().optional(),

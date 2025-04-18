@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SSEChatErrorTypeSchema } from "@/features/chat/types/sseChatDataType";
 
 export const ImageDataSchema = z.object({
   id: z.string(),
@@ -13,6 +14,8 @@ export const ChatMessageSchema = z.object({
   model: z.string(),
   content: z.string(),
   images: z.array(ImageDataSchema).nullable(),
+  errorType: SSEChatErrorTypeSchema.nullable(),
+  errorMessage: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

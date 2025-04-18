@@ -9,6 +9,7 @@ import {
 } from "@/features/chat/components";
 import { useGetChatMessages } from "@/features/chat/queries/useGetChatMessages";
 import { useSSEChat } from "@/features/chat/hooks/useSSEChat";
+import { SSEChatErrorType } from "@/features/chat/types/sseChatDataType";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
 
@@ -62,6 +63,8 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
                 content={message.content}
                 modelName={message.model}
                 createdAt={message.createdAt}
+                errorType={message.errorType as SSEChatErrorType}
+                errorMessage={message.errorMessage || ""}
               />
             ),
           )}

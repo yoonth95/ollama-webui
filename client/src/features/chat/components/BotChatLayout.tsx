@@ -1,19 +1,22 @@
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
-import { BotThinkingBox, BotChatToolbar } from "@/features/chat/components";
+import { BotThinkingBox, BotChatToolbar, BotChatError } from "@/features/chat/components";
 import useThinkContent from "@/features/chat/hooks/useThinkContent";
+import { SSEChatErrorType } from "@/features/chat/types/sseChatDataType";
 import { LoaderCircle } from "lucide-react";
 
-interface BotChatLayoutProps {
+interface BotChatLayoutPropsType {
   isRetry?: boolean;
   content: string;
   modelName?: string;
-  createdAt?: string | Date;
+  createdAt?: string;
+  errorType?: SSEChatErrorType;
+  errorMessage?: string;
 }
-
-const BotChatLayout = ({ isRetry, content, modelName, createdAt }: BotChatLayoutProps) => {
+const BotChatLayout = ({ isRetry, content, modelName, createdAt, errorType, errorMessage }: BotChatLayoutPropsType) => {
   const { thinkContent, mainContent, isThinking } = useThinkContent(content);
+  const isError = errorType && errorMessage;
 
   return (
     <article className="bot-message group flex w-full justify-start">
@@ -40,15 +43,15 @@ const BotChatLayout = ({ isRetry, content, modelName, createdAt }: BotChatLayout
               <MarkdownViewer content={mainContent} />
             </div>
           </div>
-        ) : (
-          !content && (
-            <div className="w-fit py-2">
-              <i>응답 없음.</i>
-            </div>
-          )
-        )}
+        ) : !content && !isError ? (
+          <div className="w-fit py-2">
+            <i>응답 없음.</i>
+          </div>
+        ) : isError ? (
+          <BotChatError errorType={errorType} errorMessage={errorMessage} />
+        ) : null}
 
-        <BotChatToolbar content={mainContent || "응답 없음."} />
+        <BotChatToolbar content={mainContent || errorMessage || "응답 없음."} />
       </div>
     </article>
   );
