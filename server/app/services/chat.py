@@ -22,8 +22,16 @@ pubsub_client = memory_pubsub
 METADATA_KEY_PREFIX = "metadata:"
 ANSWER_KEY_PREFIX = "answer:"
 CHAT_CHANNEL_PREFIX = "chat:"
+ERROR_COUNTER_PREFIX = "error_counter:"  # 오류 카운터 키 접두사
 MESSAGE_EXPIRE_TIME = 60 * 60 * 24  # 24시간
 MAX_RETRIES = 3
+
+# 테스트 시뮬레이션 설정 (이 변수들을 조정하여 테스트)
+TEST_ENABLED = False          # 테스트 모드 활성화 여부
+TEST_NETWORK_ERROR_RATE = 0  # 네트워크 오류 발생 확률 (0~1)
+TEST_TIMEOUT_ERROR_RATE = 0  # 타임아웃 오류 발생 확률 (0~1)
+TEST_MODEL_ERROR_RATE = 0    # 모델 오류 발생 확률 (0~1)
+TEST_CONTENT_ERROR_RATE = 0  # 콘텐츠 파싱 오류 발생 확률 (0~1)
 
 # 오류 타입 상수
 ERROR_TYPE_NETWORK = "NETWORK"
@@ -278,10 +286,11 @@ class ChatService:
       ollama_request["stream"] = True
       timeout = aiohttp.ClientTimeout(total=30)  # 요청 타임아웃 설정 (30초)
       
+      # TEST: 테스트 시뮬레이션 실행
+      if TEST_ENABLED:
+        await ChatService._run_test_simulations(room_id)
+      
       async with session.post(url, json=ollama_request, timeout=timeout) as response:
-        # TEST 코드 시작 - 실제 배포시 제거
-        # await ChatService._run_test_simulations(room_id)
-        
         if response.status != 200:
           return await ChatService._handle_api_error_response(room_id, response)
         
@@ -291,105 +300,28 @@ class ChatService:
 
   @staticmethod
   async def _run_test_simulations(room_id: str):
-    """테스트 시뮬레이션 코드 - 실제 배포시 제거"""
-    # # 네트워크 오류 시뮬레이션
-    # if random.random() < 0.5:
-    #   logger.info(f"Room {room_id}: 네트워크 오류 시뮬레이션 발생")
-    #   raise aiohttp.ClientError("Simulated network error")
+    """테스트 시뮬레이션 코드"""
+    # 네트워크 오류 시뮬레이션
+    if random.random() < TEST_NETWORK_ERROR_RATE:
+      logger.info(f"Room {room_id}: 네트워크 오류 시뮬레이션 발생")
+      raise aiohttp.ClientError("Simulated network error")
     
-    # # 타임아웃 시뮬레이션
-    # if random.random() < 1:
-    #   logger.info(f"Room {room_id}: 타임아웃 시뮬레이션 발생")
-    #   await asyncio.sleep(31)
+    # 타임아웃 시뮬레이션
+    if random.random() < TEST_TIMEOUT_ERROR_RATE:
+      logger.info(f"Room {room_id}: 타임아웃 시뮬레이션 발생")
+      await asyncio.sleep(31)  # 타임아웃보다 길게 대기
+      raise asyncio.TimeoutError("Simulated timeout error")
     
-    # # 모델 오류 시뮬레이션
-    # if random.random() < 0.3:
-    #   logger.info(f"Room {room_id}: Ollama API 모델 오류 시뮬레이션 발생")
-    #   raise Exception("Simulated model error: Invalid model name")
-    
-    # # 기타 오류 시뮬레이션
-    # if random.random() < 0.1:
-    #   logger.info(f"Room {room_id}: 기타 오류 시뮬레이션 발생")
-    #   raise Exception("Simulated unknown error")
-
-  @staticmethod
-  async def _handle_api_error_response(room_id: str, response):
-    """API 오류 응답 처리"""
-    error_text = await response.text()
-    logger.error(f"Room {room_id}: Ollama API 오류 - {response.status}, {error_text}")
-    
-    error_message = f"API 오류 ({response.status}): {error_text}"
-    
-    # 오류 메시지 발행
-    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-      "error": True,
-      "error_type": ERROR_TYPE_MODEL,
-      "message": error_message
-    }))
-    
-    # 메타데이터에서 모델 정보 가져오기
-    metadata = await ChatService.get_metadata(room_id)
-    model = metadata.get("model", "unknown") if metadata else "unknown"
-    
-    # 오류 정보 DB에 저장
-    await ChatService._save_error_to_db(room_id, ERROR_TYPE_MODEL, error_message, model)
-    
-    return None
-
-  @staticmethod
-  async def _handle_retry(room_id: str, current_retry: int, error_type: str, error_detail: str = ""):
-    """재시도 처리 로직"""
-    if current_retry < MAX_RETRIES:
-      retry_num = current_retry + 1
-      logger.info(f"Room {room_id}: {error_type} 오류 재시도 ({retry_num} / {MAX_RETRIES})")
-      
-      # 재시도 메시지 결정
-      if error_type == ERROR_TYPE_NETWORK:
-        message = f"네트워크 오류, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
-      elif error_type == ERROR_TYPE_TIMEOUT:
-        message = f"요청 시간 초과, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
-      else:
-        message = f"오류 발생, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
-      
-      # 재시도 알림 전송
-      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-        "warning": True,
-        "message": message
-      }))
-      
-      # 잠시 대기 후 재시도
-      await asyncio.sleep(1)
-      return True
-    else:
-      # 최대 재시도 횟수 초과 시 오류 메시지
-      if error_type == ERROR_TYPE_NETWORK:
-        message = "네트워크 오류, 재시도 최대 횟수 초과, Ollama를 확인해주세요."
-      elif error_type == ERROR_TYPE_TIMEOUT:
-        message = "요청 시간이 초과되었습니다. 나중에 다시 시도해주세요."
-      else:
-        message = f"오류 발생, 재시도 최대 횟수 초과: {error_detail}"
-      
-      error_message = json.dumps({
-        "error": True,
-        "error_type": error_type,
-        "message": message
-      })
-      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
-      
-      # 메타데이터에서 모델 정보 가져오기
-      metadata = await ChatService.get_metadata(room_id)
-      model = metadata.get("model", "unknown") if metadata else "unknown"
-      
-      # 오류 정보 DB에 저장
-      await ChatService._save_error_to_db(room_id, error_type, message, model)
-      
-      return False
+    # 모델 오류 시뮬레이션
+    if random.random() < TEST_MODEL_ERROR_RATE:
+      logger.info(f"Room {room_id}: Ollama API 모델 오류 시뮬레이션 발생")
+      raise Exception("Simulated model error: Invalid model name")
 
   @staticmethod
   async def _process_response_chunks(room_id: str, response, model: str, full_answer: str = ""):
     """응답 청크 처리"""
     current_answer = full_answer
-    current_retry = 0
+    error_counter = 0
     
     async for chunk in response.content:
       # 취소 여부 확인
@@ -402,8 +334,8 @@ class ChatService:
       if not chunk_text:
         continue
       
-      # TEST: 콘텐츠 파싱 오류 시뮬레이션 (실제 배포시 제거)
-      if random.random() < 0.7:
+      # TEST: 콘텐츠 파싱 오류 시뮬레이션
+      if TEST_ENABLED and random.random() < TEST_CONTENT_ERROR_RATE:
         logger.info(f"Room {room_id}: 콘텐츠 파싱 오류 시뮬레이션 발생")
         chunk_text = "invalid_json_string"
       
@@ -426,23 +358,29 @@ class ChatService:
             "model": model
           }))
       except json.JSONDecodeError as e:
-        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_CONTENT, str(e)):
-          # 최대 재시도 횟수 초과 시 오류 정보를 DB에 저장
-          await ChatService._save_error_to_db(
-            room_id, 
-            ERROR_TYPE_CONTENT, 
-            f"JSON 파싱 오류: {str(e)}", 
-            model
-          )
-          return
-        current_retry += 1
+        error_counter += 1
+        logger.warning(f"Room {room_id}: JSON 파싱 오류 - {chunk_text} (오류 횟수: {error_counter})")
         
-        logger.warning(f"Room {room_id}: JSON 파싱 오류 - {chunk_text}")
+        # 오류 메시지는 항상 클라이언트에 전송
         await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
           "error": True,
           "error_type": ERROR_TYPE_CONTENT,
           "message": "답변 도중 오류가 발생했습니다."
         }))
+        
+        # 중복 DB 저장 방지: 첫 오류 발생 시에만 DB에 저장
+        if error_counter == 1:
+          error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
+          if not pubsub_client.exists(error_counter_key):
+            pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
+            
+            # 메타데이터에서 모델 정보 가져오기
+            metadata = await ChatService.get_metadata(room_id)
+            model = metadata.get("model", "unknown") if metadata else "unknown"
+            
+            # 오류 정보 DB에 저장
+            await ChatService._save_error_to_db(room_id, ERROR_TYPE_CONTENT, "답변 도중 오류가 발생했습니다.", model)
+        
         continue
     
     return current_answer
@@ -517,6 +455,91 @@ class ChatService:
     logger.info(f"Room {room_id}: Ollama API 응답 처리 완료")
 
   @staticmethod
+  async def _handle_api_error_response(room_id: str, response):
+    """API 오류 응답 처리"""
+    error_text = await response.text()
+    logger.error(f"Room {room_id}: Ollama API 오류 - {response.status}, {error_text}")
+    
+    error_message = f"API 오류 ({response.status}): {error_text}"
+    
+    # 오류 메시지 발행
+    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+      "error": True,
+      "error_type": ERROR_TYPE_MODEL,
+      "message": error_message
+    }))
+    
+    # 메타데이터에서 모델 정보 가져오기
+    metadata = await ChatService.get_metadata(room_id)
+    model = metadata.get("model", "unknown") if metadata else "unknown"
+    
+    # 이미 오류가 저장되었는지 확인
+    error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
+    if not pubsub_client.exists(error_counter_key):
+      # 오류 카운터 설정 (이 세션에서 첫 오류)
+      pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
+      
+      # 오류 정보 DB에 저장
+      await ChatService._save_error_to_db(room_id, ERROR_TYPE_MODEL, error_message, model)
+    
+    return None
+
+  @staticmethod
+  async def _handle_retry(room_id: str, current_retry: int, error_type: str, error_detail: str = ""):
+    """재시도 처리 로직"""
+    if current_retry < MAX_RETRIES:
+      retry_num = current_retry + 1
+      logger.info(f"Room {room_id}: {error_type} 오류 재시도 ({retry_num} / {MAX_RETRIES})")
+      
+      # 재시도 메시지 결정
+      if error_type == ERROR_TYPE_NETWORK:
+        message = f"네트워크 오류, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
+      elif error_type == ERROR_TYPE_TIMEOUT:
+        message = f"요청 시간 초과, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
+      else:
+        message = f"오류 발생, 재시도 중입니다 ({retry_num} / {MAX_RETRIES})"
+      
+      # 재시도 알림 전송
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "warning": True,
+        "message": message
+      }))
+      
+      # 잠시 대기 후 재시도
+      await asyncio.sleep(1)
+      return True
+    else:
+      # 최대 재시도 횟수 초과 시 오류 메시지
+      if error_type == ERROR_TYPE_NETWORK:
+        message = "네트워크 오류, 재시도 최대 횟수 초과, Ollama를 확인해주세요."
+      elif error_type == ERROR_TYPE_TIMEOUT:
+        message = "요청 시간이 초과되었습니다. 나중에 다시 시도해주세요."
+      else:
+        message = f"오류 발생, 재시도 최대 횟수 초과: {error_detail}"
+      
+      error_message = json.dumps({
+        "error": True,
+        "error_type": error_type,
+        "message": message
+      })
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
+      
+      # 메타데이터에서 모델 정보 가져오기
+      metadata = await ChatService.get_metadata(room_id)
+      model = metadata.get("model", "unknown") if metadata else "unknown"
+      
+      # 이미 오류가 저장되었는지 확인
+      error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
+      if not pubsub_client.exists(error_counter_key):
+        # 오류 카운터 설정 (이 세션에서 첫 오류)
+        pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
+        
+        # 오류 정보 DB에 저장
+        await ChatService._save_error_to_db(room_id, error_type, message, model)
+      
+      return False
+
+  @staticmethod
   async def _handle_general_exception(room_id: str, full_answer: str, exception: Exception):
     """일반 예외 처리"""
     logger.error(f"Room {room_id}: 답변 생성 중 오류 발생 - {str(exception)}")
@@ -545,8 +568,14 @@ class ChatService:
     metadata = await ChatService.get_metadata(room_id)
     model = metadata.get("model", "unknown") if metadata else "unknown"
     
-    # 오류 정보 DB에 저장
-    await ChatService._save_error_to_db(room_id, error_type, error_message, model)
+    # 이미 오류가 저장되었는지 확인
+    error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
+    if not pubsub_client.exists(error_counter_key):
+      # 오류 카운터 설정 (이 세션에서 첫 오류)
+      pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
+      
+      # 오류 정보 DB에 저장
+      await ChatService._save_error_to_db(room_id, error_type, error_message, model)
 
   @staticmethod
   def _determine_error_type(error_str: str):
@@ -738,6 +767,11 @@ class ChatService:
       del force_stopped_chats[room_id]
     if room_id in completed_chats:
       del completed_chats[room_id]
+    
+    # 오류 카운터 삭제
+    error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
+    pubsub_client.delete(error_counter_key)
+    
     logger.info(f"Room {room_id}: 취소 및 강제 취소 상태 초기화 완료")
 
   @staticmethod
