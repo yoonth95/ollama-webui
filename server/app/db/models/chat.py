@@ -16,6 +16,7 @@ class ChatMessage(Base):
   images = Column(JSON, nullable=True)  # base64 인코딩된 이미지 문자열 리스트, 없을 수도 있음
   error_type = Column(String, nullable=True)  # 오류 타입
   error_message = Column(String, nullable=True)  # 오류 메시지
+  user_message_id = Column(String, nullable=True)  # 유저 메시지 ID
   created_at = Column(DateTime(timezone=True), default=get_kst_time)  # 생성 시각
   updated_at = Column(DateTime(timezone=True), default=get_kst_time)  # 수정 시각
 

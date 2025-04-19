@@ -20,6 +20,7 @@ class ChatAssistantMessageType(BaseModel):
   room_id: str
   content: str
   model: str
+  user_message_id: str
   error_type: Optional[str] = None
   error_message: Optional[str] = None
 

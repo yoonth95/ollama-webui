@@ -57,11 +57,14 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
       ollama_request["messages"][0]["images"] = request.images
     
     # 유저 메시지 저장 (commit=False로 설정하여 자동 커밋 방지)
-    await ChatService.save_user_message(db, ChatUserMessageType(**user_message), commit=False)
-    db.commit() # 커밋
+    user_response_data = await ChatService.save_user_message(db, ChatUserMessageType(**user_message), commit=False)
+    
+    # 필요한 데이터 추출 후 커밋
+    user_message_id = user_response_data["id"]
+    db.commit() # 모든 작업이 성공적으로 완료된 후 커밋
     
     # 백그라운드 실행
-    asyncio.create_task(ChatService.generate_ollama_answer(response["id"], ollama_request))
+    asyncio.create_task(ChatService.generate_ollama_answer(response["id"], ollama_request, user_message_id))
     # await asyncio.sleep(3)
     return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)
   

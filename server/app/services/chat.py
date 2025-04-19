@@ -27,7 +27,7 @@ MESSAGE_EXPIRE_TIME = 60 * 60 * 24  # 24시간
 MAX_RETRIES = 3
 
 # 테스트 시뮬레이션 설정 (이 변수들을 조정하여 테스트)
-TEST_ENABLED = False          # 테스트 모드 활성화 여부
+TEST_ENABLED = False         # 테스트 모드 활성화 여부
 TEST_NETWORK_ERROR_RATE = 0  # 네트워크 오류 발생 확률 (0~1)
 TEST_TIMEOUT_ERROR_RATE = 0  # 타임아웃 오류 발생 확률 (0~1)
 TEST_MODEL_ERROR_RATE = 0    # 모델 오류 발생 확률 (0~1)
@@ -44,7 +44,10 @@ class ChatService:
   @staticmethod
   async def save_user_message(db: Session, user_message: ChatUserMessageType, commit: bool = True):
     """유저 메시지 저장"""
-    return ChatCrud.save_user_message(db, user_message, commit=commit)
+    user_message_data = ChatCrud.save_user_message(db, user_message, commit=commit)
+    return {
+      "id": user_message_data.id,
+    }
     
   @staticmethod
   async def save_assistant_message(db: Session, assistant_message: ChatAssistantMessageType, commit: bool = True):
@@ -125,7 +128,7 @@ class ChatService:
         db.close()
 
   @staticmethod
-  async def generate_ollama_answer(room_id: str, ollama_request: dict):
+  async def generate_ollama_answer(room_id: str, ollama_request: dict, user_message_id: str):
     """Ollama API를 사용하여 답변 생성 및 PubSub에 저장"""
     logger.info(f"Room {room_id}: Ollama API 호출 시작")
     full_answer = ""
@@ -133,20 +136,20 @@ class ChatService:
     
     try:
       # 세션 초기화 및 메타데이터 설정
-      await ChatService._initialize_chat_session(room_id, model)
+      await ChatService._initialize_chat_session(room_id, model, user_message_id)
       
       # API 호출 처리
-      return await ChatService._process_ollama_api_request(room_id, ollama_request, model)
+      return await ChatService._process_ollama_api_request(room_id, ollama_request, model, user_message_id)
     except Exception as e:
       # 예외 처리
-      await ChatService._handle_general_exception(room_id, full_answer, e)
+      await ChatService._handle_general_exception(room_id, full_answer, e, user_message_id)
     finally:
       # 활성 채팅 목록에서 제거
       if room_id in active_chats:
         del active_chats[room_id]
 
   @staticmethod
-  async def _initialize_chat_session(room_id: str, model: str):
+  async def _initialize_chat_session(room_id: str, model: str, user_message_id: str):
     """채팅 세션 초기화 및 메타데이터 설정"""
     # 현재 진행 중인 응답 생성 태스크 등록
     active_chats[room_id] = asyncio.current_task()
@@ -154,10 +157,11 @@ class ChatService:
     # 이전 응답이 있을 경우 삭제
     pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
     
-    # 초기 메타데이터 저장 - 모델명과 요청 시작 시간
+    # 초기 메타데이터 저장 - 모델명과 요청 시작 시간, user_message_id
     metadata = {
       "model": model,
-      "created_at": datetime.now().isoformat()
+      "created_at": datetime.now().isoformat(),
+      "user_message_id": user_message_id
     }
     pubsub_client.set(f"{METADATA_KEY_PREFIX}{room_id}", json.dumps(metadata), MESSAGE_EXPIRE_TIME)
     
@@ -169,7 +173,7 @@ class ChatService:
     }))
 
   @staticmethod
-  async def _process_ollama_api_request(room_id: str, ollama_request: dict, model: str):
+  async def _process_ollama_api_request(room_id: str, ollama_request: dict, model: str, user_message_id: str):
     """Ollama API 요청 처리 및 재시도 로직"""
     current_retry = 0
     full_answer = ""
@@ -181,20 +185,20 @@ class ChatService:
       
       try:
         # API 요청 실행
-        result = await ChatService._execute_api_request(room_id, ollama_request, model, full_answer)
+        result = await ChatService._execute_api_request(room_id, ollama_request, model, full_answer, user_message_id)
         if result is not None:  # 정상적으로 완료되었거나 취소되었을 경우
           return result
         break
       
       except aiohttp.ClientError as e:
         # 네트워크 오류 처리
-        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_NETWORK, str(e)):
+        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_NETWORK, str(e), user_message_id):
           return
         current_retry += 1
       
       except asyncio.TimeoutError:
         # 타임아웃 오류 처리
-        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_TIMEOUT):
+        if not await ChatService._handle_retry(room_id, current_retry, ERROR_TYPE_TIMEOUT, "", user_message_id):
           return
         current_retry += 1
 
@@ -279,7 +283,7 @@ class ChatService:
     return "응답 생성이 취소되었습니다. 답변이 너무 짧아 저장되지 않았습니다."
 
   @staticmethod
-  async def _execute_api_request(room_id: str, ollama_request: dict, model: str, full_answer: str = ""):
+  async def _execute_api_request(room_id: str, ollama_request: dict, model: str, full_answer: str = "", user_message_id: str = None):
     """API 요청 실행 및 응답 처리"""
     async with aiohttp.ClientSession() as session:
       url = f"{settings.OLLAMA_API_BASE_URL}/api/chat"
@@ -292,10 +296,10 @@ class ChatService:
       
       async with session.post(url, json=ollama_request, timeout=timeout) as response:
         if response.status != 200:
-          return await ChatService._handle_api_error_response(room_id, response)
+          return await ChatService._handle_api_error_response(room_id, response, user_message_id)
         
         # 응답 청크 처리
-        result = await ChatService._process_response_chunks(room_id, response, model, full_answer)
+        result = await ChatService._process_response_chunks(room_id, response, model, full_answer, user_message_id)
         return result
 
   @staticmethod
@@ -318,7 +322,7 @@ class ChatService:
       raise Exception("Simulated model error: Invalid model name")
 
   @staticmethod
-  async def _process_response_chunks(room_id: str, response, model: str, full_answer: str = ""):
+  async def _process_response_chunks(room_id: str, response, model: str, full_answer: str = "", user_message_id: str = None):
     """응답 청크 처리"""
     current_answer = full_answer
     error_counter = 0
@@ -327,7 +331,7 @@ class ChatService:
       # 취소 여부 확인
       if room_id in cancelled_chats and cancelled_chats[room_id]:
         # 취소 처리
-        await ChatService._handle_cancellation_during_streaming(room_id, current_answer)
+        await ChatService._handle_cancellation_during_streaming(room_id, current_answer, user_message_id)
         return None
       
       chunk_text = chunk.decode('utf-8').strip()
@@ -344,7 +348,7 @@ class ChatService:
         
         # 완료 메시지인 경우
         if "done" in chunk_data and chunk_data["done"]:
-          await ChatService._handle_completion(room_id, current_answer, model)
+          await ChatService._handle_completion(room_id, current_answer, model, user_message_id)
           return True
         
         # 텍스트 응답 처리
@@ -379,14 +383,14 @@ class ChatService:
             model = metadata.get("model", "unknown") if metadata else "unknown"
             
             # 오류 정보 DB에 저장
-            await ChatService._save_error_to_db(room_id, ERROR_TYPE_CONTENT, "답변 도중 오류가 발생했습니다.", model)
+            await ChatService._save_error_to_db(room_id, ERROR_TYPE_CONTENT, "답변 도중 오류가 발생했습니다.", model, user_message_id)
         
         continue
     
     return current_answer
 
   @staticmethod
-  async def _handle_cancellation_during_streaming(room_id: str, full_answer: str):
+  async def _handle_cancellation_during_streaming(room_id: str, full_answer: str, user_message_id: str = None):
     """응답 스트리밍 중 취소 처리"""
     logger.info(f"Room {room_id}: 응답 생성 중 취소됨")
     
@@ -428,16 +432,23 @@ class ChatService:
       }))
 
   @staticmethod
-  async def _handle_completion(room_id: str, full_answer: str, model: str):
+  async def _handle_completion(room_id: str, full_answer: str, model: str, user_message_id: str = None):
     """응답 완료 처리"""
     # 완료 상태 기록
     completed_chats[room_id] = True
+    
+    # user_message_id가 없는 경우 메타데이터에서 가져오기
+    if not user_message_id:
+      metadata = await ChatService.get_metadata(room_id)
+      if metadata and "user_message_id" in metadata:
+        user_message_id = metadata.get("user_message_id")
     
     # 최종 답변을 데이터베이스에 저장
     assistant_message = ChatAssistantMessageType(
       room_id=room_id,
       content=full_answer,
       model=model,
+      user_message_id=user_message_id,
       error_type=None,
       error_message=None
     )
@@ -455,7 +466,7 @@ class ChatService:
     logger.info(f"Room {room_id}: Ollama API 응답 처리 완료")
 
   @staticmethod
-  async def _handle_api_error_response(room_id: str, response):
+  async def _handle_api_error_response(room_id: str, response, user_message_id: str = None):
     """API 오류 응답 처리"""
     error_text = await response.text()
     logger.error(f"Room {room_id}: Ollama API 오류 - {response.status}, {error_text}")
@@ -473,6 +484,10 @@ class ChatService:
     metadata = await ChatService.get_metadata(room_id)
     model = metadata.get("model", "unknown") if metadata else "unknown"
     
+    # user_message_id가 없는 경우 메타데이터에서 가져오기
+    if not user_message_id and metadata and "user_message_id" in metadata:
+      user_message_id = metadata.get("user_message_id")
+    
     # 이미 오류가 저장되었는지 확인
     error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
     if not pubsub_client.exists(error_counter_key):
@@ -480,12 +495,12 @@ class ChatService:
       pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
       
       # 오류 정보 DB에 저장
-      await ChatService._save_error_to_db(room_id, ERROR_TYPE_MODEL, error_message, model)
+      await ChatService._save_error_to_db(room_id, ERROR_TYPE_MODEL, error_message, model, user_message_id)
     
     return None
 
   @staticmethod
-  async def _handle_retry(room_id: str, current_retry: int, error_type: str, error_detail: str = ""):
+  async def _handle_retry(room_id: str, current_retry: int, error_type: str, error_detail: str = "", user_message_id: str = None):
     """재시도 처리 로직"""
     if current_retry < MAX_RETRIES:
       retry_num = current_retry + 1
@@ -511,11 +526,11 @@ class ChatService:
     else:
       # 최대 재시도 횟수 초과 시 오류 메시지
       if error_type == ERROR_TYPE_NETWORK:
-        message = "네트워크 오류, 재시도 최대 횟수 초과, Ollama를 확인해주세요."
+        message = "네트워크 오류, 네트워크 연결 또는 Ollama 연결을 확인해주세요."
       elif error_type == ERROR_TYPE_TIMEOUT:
         message = "요청 시간이 초과되었습니다. 나중에 다시 시도해주세요."
       else:
-        message = f"오류 발생, 재시도 최대 횟수 초과: {error_detail}"
+        message = f"오류 발생, {error_detail}"
       
       error_message = json.dumps({
         "error": True,
@@ -528,6 +543,10 @@ class ChatService:
       metadata = await ChatService.get_metadata(room_id)
       model = metadata.get("model", "unknown") if metadata else "unknown"
       
+      # user_message_id가 없는 경우 메타데이터에서 가져오기
+      if not user_message_id and metadata and "user_message_id" in metadata:
+        user_message_id = metadata.get("user_message_id")
+      
       # 이미 오류가 저장되었는지 확인
       error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
       if not pubsub_client.exists(error_counter_key):
@@ -535,12 +554,12 @@ class ChatService:
         pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
         
         # 오류 정보 DB에 저장
-        await ChatService._save_error_to_db(room_id, error_type, message, model)
+        await ChatService._save_error_to_db(room_id, error_type, message, model, user_message_id)
       
       return False
 
   @staticmethod
-  async def _handle_general_exception(room_id: str, full_answer: str, exception: Exception):
+  async def _handle_general_exception(room_id: str, full_answer: str, exception: Exception, user_message_id: str = None):
     """일반 예외 처리"""
     logger.error(f"Room {room_id}: 답변 생성 중 오류 발생 - {str(exception)}")
     logger.error(traceback.format_exc())
@@ -568,6 +587,10 @@ class ChatService:
     metadata = await ChatService.get_metadata(room_id)
     model = metadata.get("model", "unknown") if metadata else "unknown"
     
+    # user_message_id가 없는 경우 메타데이터에서 가져오기
+    if not user_message_id and metadata and "user_message_id" in metadata:
+      user_message_id = metadata.get("user_message_id")
+    
     # 이미 오류가 저장되었는지 확인
     error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
     if not pubsub_client.exists(error_counter_key):
@@ -575,7 +598,7 @@ class ChatService:
       pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
       
       # 오류 정보 DB에 저장
-      await ChatService._save_error_to_db(room_id, error_type, error_message, model)
+      await ChatService._save_error_to_db(room_id, error_type, error_message, model, user_message_id)
 
   @staticmethod
   def _determine_error_type(error_str: str):
@@ -775,7 +798,7 @@ class ChatService:
     logger.info(f"Room {room_id}: 취소 및 강제 취소 상태 초기화 완료")
 
   @staticmethod
-  async def _save_error_to_db(room_id: str, error_type: str, error_message: str, model: str):
+  async def _save_error_to_db(room_id: str, error_type: str, error_message: str, model: str, user_message_id: str = None):
     """오류 정보를 데이터베이스에 저장"""
     logger.info(f"Room {room_id}: 오류 정보 저장 시작 (error_type: {error_type})")
     try:
@@ -784,6 +807,7 @@ class ChatService:
         room_id=room_id,
         content="",  # 빈 문자열로 설정
         model=model,
+        user_message_id=user_message_id,
         error_type=error_type,
         error_message=error_message
       )
