@@ -8,6 +8,8 @@ import BotThinkingBox from "./BotThinkingBox";
 import BotChatError from "./BotChatError";
 import BotChatToolbar from "./BotChatToolbar";
 import BotChatEmpty from "./BotChatEmpty";
+import BotChatContent from "./BotChatContent";
+import BotChatHeader from "./BotChatHeader";
 import ChatMessageSkeleton from "./ChatMessageSkeleton";
 import ErrorChatPage from "./ErrorChatPage";
 import ChatOptimisticLoading from "./ChatOptimisticLoading";
@@ -25,6 +27,8 @@ export {
   BotChatError,
   BotChatToolbar,
   BotChatEmpty,
+  BotChatContent,
+  BotChatHeader,
   ChatMessageSkeleton,
   ErrorChatPage,
   ChatOptimisticLoading,
