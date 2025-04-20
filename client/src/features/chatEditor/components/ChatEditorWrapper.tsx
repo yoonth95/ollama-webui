@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import {
   ChatOptionButtonContainer,
   ChatSendButton,
@@ -10,8 +11,9 @@ import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 
 const ChatEditorWrapper = () => {
   const editorRef = useRef<TiptapEditorRef | null>(null);
+  const { chatRoomId = "" } = useParams<{ chatRoomId?: string }>();
   const [hasValidContent, setHasValidContent] = useState(false);
-  const { handleSubmit, isPending } = useMessageSubmit(editorRef);
+  const { handleSubmit, isPending } = useMessageSubmit({ editorRef, chatRoomId });
 
   const handleContentChange = useCallback((content: string) => {
     const isValid = content.replace(/[\s\n]/g, "").length > 0;
@@ -39,7 +41,12 @@ const ChatEditorWrapper = () => {
       />
       <div className="flex w-full items-center justify-between px-3 py-3">
         <ChatOptionButtonContainer />
-        <ChatSendButton hasValidContent={hasValidContent} isPending={isPending} onSubmit={handleSubmit} />
+        <ChatSendButton
+          chatRoomId={chatRoomId}
+          hasValidContent={hasValidContent}
+          isPending={isPending}
+          onSubmit={handleSubmit}
+        />
       </div>
     </div>
   );

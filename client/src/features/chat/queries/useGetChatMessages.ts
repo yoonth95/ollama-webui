@@ -1,6 +1,5 @@
 import { queryKeys, useCustomQuery } from "@/shared/api";
 import { ChatMessageArraySchema, ChatMessageType } from "@/shared/types/chatMessageType";
-import { DisplayType } from "@/shared/types/apiType";
 
 /**
  * 채팅 메시지 히스토리를 가져오는 훅
@@ -9,14 +8,24 @@ import { DisplayType } from "@/shared/types/apiType";
  * @returns 채팅 메시지 데이터 및 상태
  */
 export const useGetChatMessages = (chatRoomId: string, isOptimistic: boolean) => {
-  return useCustomQuery<ChatMessageType[]>({
+  const result = useCustomQuery<ChatMessageType[]>({
     queryKey: queryKeys.chats.messages(chatRoomId),
     endpoint: `/chat/${chatRoomId}`,
     schema: ChatMessageArraySchema,
-    errorOptions: { type: DisplayType.Display },
     options: {
-      // isOptimistic가 true일 경우 API 호출을 건너뜀
+      staleTime: 0,
       enabled: !!chatRoomId && !isOptimistic,
     },
   });
+
+  const { data: historyMessages } = result;
+  const isLastBotMessage =
+    historyMessages?.data && historyMessages.data.length > 0
+      ? historyMessages.data[historyMessages.data.length - 1].role === "assistant"
+      : false;
+
+  return {
+    ...result,
+    isLastBotMessage,
+  };
 };

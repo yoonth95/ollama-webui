@@ -35,9 +35,7 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
   try:
     db.begin()  # 트랜잭션 시작
     
-    # 채팅방 생성 (commit=False로 설정하여 자동 커밋 방지)
     response = await RoomService.create_room_service(db, commit=False)
-    
     if not response:
       db.rollback()
       logger.error("채팅방 생성 실패: 빈 응답")
@@ -51,10 +49,7 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
     ollama_request = {
       "model": request.model,
       "messages": [
-        {
-          "role": "user",
-          "content": request.content
-        }
+        { "role": "user", "content": request.content }
       ]
     }
     if request.images:
@@ -62,17 +57,19 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
       ollama_request["messages"][0]["images"] = request.images
     
     # 유저 메시지 저장 (commit=False로 설정하여 자동 커밋 방지)
-    await ChatService.save_user_message(db, ChatUserMessageType(**user_message), commit=False)
+    user_response_data = await ChatService.save_user_message(db, ChatUserMessageType(**user_message), commit=False)
     
-    db.commit() # 커밋
+    # 필요한 데이터 추출 후 커밋
+    user_message_id = user_response_data["id"]
+    db.commit() # 모든 작업이 성공적으로 완료된 후 커밋
     
-    # 백그라운드 태스크로 실행하여 API 응답을 기다리지 않고 바로 반환
-    asyncio.create_task(ChatService.generate_ollama_answer(response["id"], ollama_request))
-    
+    # 백그라운드 실행
+    asyncio.create_task(ChatService.generate_ollama_answer(response["id"], ollama_request, user_message_id))
+    # await asyncio.sleep(3)
     return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)
   
   except Exception as e:
-    db.rollback() # 롤백
+    db.rollback()
     logger.error(f"채팅방 생성 중 오류 발생: {e}")
     raise # 예외를 다시 발생시켜 handle_exceptions에서 에러 처리
 

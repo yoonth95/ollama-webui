@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Session
 from app.db.models.chat import ChatMessage
 from app.schemas.chat import ChatUserMessageType, ChatAssistantMessageType
@@ -7,12 +8,14 @@ class ChatCrud:
   def save_user_message(db: Session, user_message: ChatUserMessageType, commit: bool = True):
     """유저 메시지 저장"""
     chat = ChatMessage(
+      id=str(uuid.uuid4()),
       room_id=user_message.room_id,
       role="user",
       model=user_message.model,
       content=user_message.content,
-      images=user_message.images
     )
+    if user_message.images:
+      chat.images = user_message.images
     
     db.add(chat)
     
@@ -30,6 +33,9 @@ class ChatCrud:
       role="assistant",
       model=assistant_message.model,
       content=assistant_message.content,
+      error_type=assistant_message.error_type,
+      error_message=assistant_message.error_message,
+      user_message_id=assistant_message.user_message_id
     )
     
     db.add(chat)

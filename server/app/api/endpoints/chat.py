@@ -1,18 +1,18 @@
 import asyncio
 import json
+from datetime import datetime
 from fastapi import APIRouter, Depends, Request, Body
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.orm import Session
 from app.services.chat import ChatService
+from app.db.database import get_db
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
-from app.db.database import get_db
-from app.core.config import settings
+from app.utils.chat_manager import cancelled_chats
 from app.utils.memory_pubsub import memory_pubsub
+from app.schemas.chat import ChatUserMessageType, ChatRetryRequestType, ChatCancelRequestType, ChatForceStopRequestType
 import logging
-from datetime import datetime
-from app.schemas.chat import ChatUserMessageType
 
 router = APIRouter()
 
@@ -37,85 +37,6 @@ async def get_chatting_history(room_id: str, db: Session = Depends(get_db)):
     return JSONResponse(content=create_response(False, "존재하지 않는 채팅방입니다.", None), status_code=404)
 
   return JSONResponse(content=create_response(True, "채팅 내역 조회", response), status_code=200)
-
-@router.post("/chat/message/{room_id}")
-@handle_exceptions
-async def send_message(room_id: str, message: dict = Body(...), db: Session = Depends(get_db)):
-  """기존 채팅방에 메시지 전송"""
-  logger.info(f"📩 클라이언트 메시지 전송: {room_id}")
-  
-  # 채팅방 존재 여부 확인
-  chat_history = await ChatService.get_chatting_history(db, room_id)
-  if not chat_history:
-    return JSONResponse(content=create_response(False, "존재하지 않는 채팅방입니다.", None), status_code=404)
-  
-  try:
-    # 트랜잭션 시작
-    db.begin()
-    
-    # 메시지 유효성 검사
-    if not message.get("content") and not message.get("images"):
-      return JSONResponse(content=create_response(False, "이미지 첨부 또는 질문을 입력해주세요.", None), status_code=400)
-    
-    if not message.get("model"):
-      return JSONResponse(content=create_response(False, "모델을 선택해주세요.", None), status_code=400)
-    
-    # 유저 메시지 생성
-    user_message = ChatUserMessageType(
-      room_id=room_id,
-      content=message.get("content", ""),
-      model=message.get("model"),
-      images=message.get("images")
-    )
-    
-    # 유저 메시지 저장
-    await ChatService.save_user_message(db, user_message)
-    
-    # ollama 요청 구성
-    ollama_request = {
-      "model": message.get("model"),
-      "messages": [
-        {
-          "role": "user",
-          "content": message.get("content", "")
-        }
-      ]
-    }
-    
-    # 이미지 추가
-    if message.get("images"):
-      ollama_request["messages"][0]["images"] = message.get("images")
-    
-    # 이전 대화 기록도 포함 (컨텍스트 제공)
-    # 최근 5턴의 대화만 포함
-    chat_context = []
-    for i, msg in enumerate(chat_history):
-      if i >= max(0, len(chat_history) - 10):  # 최대 10개 메시지
-        chat_context.append({
-          "role": msg["role"],
-          "content": msg["content"]
-        })
-    
-    if chat_context:
-      # 컨텍스트 추가 (마지막 메시지는 제외하고 앞에 추가)
-      ollama_request["messages"] = chat_context + ollama_request["messages"]
-    
-    # 커밋
-    db.commit()
-    
-    # 비동기로 Ollama 요청 실행
-    asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request))
-    
-    return JSONResponse(content=create_response(True, "메시지 전송 완료", {"room_id": room_id}), status_code=200)
-    
-  except Exception as e:
-    # 롤백
-    db.rollback()
-    logger.error(f"메시지 전송 중 오류 발생: {e}")
-    return JSONResponse(
-      content=create_response(False, f"메시지 전송 중 오류가 발생했습니다: {str(e)}", None), 
-      status_code=500
-    )
 
 @router.get("/chat/stream/{room_id}")
 async def stream_chat(room_id: str, request: Request):
@@ -189,6 +110,13 @@ async def stream_chat(room_id: str, request: Request):
         # 클라이언트 연결 종료 확인
         if await request.is_disconnected():
           logger.info(f"📤 클라이언트 연결 종료: {room_id}")
+          # 응답 생성 중단 처리 (클라이언트가 연결을 종료한 경우)
+          # 이미 취소된 채팅인지 확인 - cancelled_chats에 있으면 중복 취소 방지
+          if room_id not in cancelled_chats or not cancelled_chats[room_id]:
+            logger.info(f"Room {room_id}: 클라이언트 연결 종료로 인한 취소 처리 시작")
+            asyncio.create_task(ChatService.cancel_chat(room_id))
+          else:
+            logger.info(f"Room {room_id}: 이미 취소된 채팅이므로 추가 cancel_chat 호출 건너뜀")
           break
         
         # 주기적으로 ping 메시지 전송 (15초마다)
@@ -234,6 +162,40 @@ async def stream_chat(room_id: str, request: Request):
               # 에러 발생 시 잠시 대기 후 연결 계속 유지
               await asyncio.sleep(1)
               continue
+            
+            # 취소 메시지 처리
+            if message_data.get("cancelled"):
+              logger.info(f"스트리밍 취소 메시지: {room_id}")
+              
+              # 강제 취소인지 확인
+              force_stopped = message_data.get("force_stopped", False)
+              if force_stopped:
+                logger.info(f"강제 취소로 인해 답변이 저장되지 않음")
+                yield {
+                  "event": "force_stopped",
+                  "data": data
+                }
+                # 강제 취소 메시지 발생 시 연결 즉시 종료
+                return
+              
+              # 일반 취소 - 부분 저장 여부 확인하여 클라이언트에게 전달
+              was_saved = message_data.get("partial_saved", False)
+              if was_saved:
+                logger.info(f"부분 생성된 답변 저장됨 ({message_data.get('partial_length', 0)} 자)")
+              else:
+                reason = ""
+                # 저장 실패 이유 확인 (태그 처리 등)
+                if "사고 과정" in message_data.get("message", ""):
+                  reason = " - 불완전한 <think> 태그 감지"
+                logger.info(f"부분 생성된 답변 저장되지 않음{reason}")
+              
+              yield {
+                "event": "cancelled",
+                "data": data
+              }
+              
+              # 취소 메시지 발생 시 연결 즉시 종료
+              return
             
             # 완료 메시지 확인
             if message_data.get("done"):
@@ -284,69 +246,26 @@ async def stream_chat(room_id: str, request: Request):
   
   return EventSourceResponse(event_generator())
 
-@router.post("/chat/retry/{room_id}")
+@router.post("/chat/cancel")
 @handle_exceptions
-async def retry_chat(room_id: str, db: Session = Depends(get_db)):
-  """재시도 요청"""
-  logger.info(f"📩 클라이언트 재시도 요청: {room_id}")
+async def cancel_chat(request: ChatCancelRequestType):
+  """채팅 응답 생성 중단"""
+  room_id = request.room_id
+  logger.info(f"📩 클라이언트 채팅 중단 요청: {room_id}")
   
-  # 기존 채팅 내역 가져오기
-  chat_history = await ChatService.get_chatting_history(db, room_id)
-  if not chat_history:
-    return JSONResponse(content=create_response(False, "존재하지 않는 채팅방입니다.", None), status_code=404)
+  # 채팅 응답 생성 중단 서비스 호출
+  await ChatService.cancel_chat(room_id)
   
-  # 유저 메시지만 필터링
-  user_messages = [msg for msg in chat_history if msg["role"] == "user"]
-  if not user_messages:
-    return JSONResponse(content=create_response(False, "재시도할 메시지가 없습니다.", None), status_code=400)
+  return JSONResponse(content=create_response(True, "채팅 중단 완료", None), status_code=200)
+
+@router.post("/chat/force-stop")
+@handle_exceptions
+async def force_stop_chat(request: ChatForceStopRequestType):
+  """채팅 응답 강제 중단 (답변 저장하지 않음)"""
+  room_id = request.room_id
+  logger.info(f"📩 클라이언트 채팅 강제 중단 요청: {room_id}")
   
-  # 마지막 유저 메시지 가져오기
-  last_user_message = user_messages[-1]
+  # 채팅 응답 강제 중단 서비스 호출
+  await ChatService.force_stop_chat(room_id)
   
-  # 어시스턴트 메시지 체크
-  assistant_messages = [msg for msg in chat_history if msg["role"] == "assistant"]
-  
-  # 인메모리 데이터 초기화
-  pubsub_client.delete(f"answer:{room_id}")
-  
-  # 채널의 기존 메시지 정리
-  pubsub_client.clear_channel(f"chat:{room_id}")
-  
-  # 올라마 요청 재구성
-  ollama_request = {
-    "model": last_user_message["model"],
-    "messages": [
-      {
-        "role": "user",
-        "content": last_user_message["content"]
-      }
-    ]
-  }
-  
-  # 이미지가 있으면 추가
-  if "images" in last_user_message and last_user_message["images"]:
-    ollama_request["messages"][0]["images"] = last_user_message["images"]
-  
-  # 이전 대화 기록도 포함 (컨텍스트 제공)
-  chat_context = []
-  for i, msg in enumerate(chat_history[:-1]):  # 마지막 메시지 제외
-    if i >= len(chat_history) - 10:  # 최대 5턴(10개 메시지)만 포함
-      chat_context.append({
-        "role": msg["role"],
-        "content": msg["content"]
-      })
-  
-  if chat_context:
-    # 컨텍스트 추가
-    ollama_request["messages"] = chat_context + ollama_request["messages"]
-  
-  # 어시스턴트 메시지가 이미 있으면, DB에서 삭제
-  if assistant_messages and len(assistant_messages) > 0:
-    last_assistant_message = assistant_messages[-1]
-    # DB에서 답변 메시지 삭제
-    await ChatService.delete_assistant_message(db, last_assistant_message["id"])
-  
-  # 비동기로 새 Ollama 요청 실행
-  asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request))
-  
-  return JSONResponse(content=create_response(True, "재시도 요청 완료", None), status_code=200)
+  return JSONResponse(content=create_response(True, "채팅 강제 중단 완료", None), status_code=200)

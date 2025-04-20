@@ -1,19 +1,31 @@
 import { useEffect } from "react";
-import { BotChatLayout, ChatMessageSkeleton, UserChatBox, BotChatError } from "@/features/chat/components";
+import { useShallow } from "zustand/shallow";
+import {
+  BotChatLayout,
+  ChatMessageSkeleton,
+  UserChatBox,
+  BotChatEmpty,
+  ChatOptimisticRenderer,
+} from "@/features/chat/components";
 import { useGetChatMessages } from "@/features/chat/queries/useGetChatMessages";
 import { useSSEChat } from "@/features/chat/hooks/useSSEChat";
+import { SSEChatErrorType } from "@/features/chat/types/sseChatDataType";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
-import { LoaderCircle } from "lucide-react";
 
-/**
- * 채팅 메시지 목록 컴포넌트
- * - 홈에서 이동한 경우(optimistic 모드): 사용자가 입력한 메시지와 SSE로 받은 봇 응답 표시
- * - 일반적인 접근(일반 모드): 채팅 히스토리 API로 받은 전체 메시지 표시
- */
 const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
-  const { userChatData, isOptimistic, deactivateOptimisticUI } = useChatOptimisticStore();
-  const { data: historyMessages, isLoading } = useGetChatMessages(chatRoomId, isOptimistic);
+  const [userChatData, isOptimistic, isReceivingResponse, deactivateOptimisticUI, setIsReceivingResponse] =
+    useChatOptimisticStore(
+      useShallow((state) => [
+        state.userChatData,
+        state.isOptimistic,
+        state.isReceivingResponse,
+        state.deactivateOptimisticUI,
+        state.setIsReceivingResponse,
+      ]),
+    );
+
+  const { data: historyMessages, isLoading, isLastBotMessage } = useGetChatMessages(chatRoomId, isOptimistic);
 
   // 일반 모드에서 채팅 히스토리 로드 완료 시 optimistic 모드 해제
   useEffect(() => {
@@ -22,52 +34,42 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
     }
   }, [isLoading, historyMessages, isOptimistic, deactivateOptimisticUI]);
 
-  const { sseData } = useSSEChat(chatRoomId, isOptimistic);
+  const { sseData } = useSSEChat({
+    chatRoomId,
+    isOptimistic,
+    setIsReceivingResponse,
+  });
 
-  // Optimistic
+  // Optimistic 모드
   if (isOptimistic) {
     return (
-      <>
-        {userChatData.content && <UserChatBox content={userChatData.content} images={userChatData.images ?? []} />}
-
-        {sseData.error ? (
-          <BotChatError
-            chatRoomId={chatRoomId}
-            errorType={sseData.errorType as "network" | "timeout" | "model" | "content" | "unknown"}
-          />
-        ) : sseData.isReceiving && !sseData.response ? (
-          <div className="py-2">
-            <LoaderCircle className="h-6 w-6 animate-spin" />
-          </div>
-        ) : sseData.response ? (
-          <BotChatLayout
-            content={sseData.response}
-            modelName={sseData.model || ""}
-            createdAt={sseData.createdAt || ""}
-          />
-        ) : null}
-      </>
+      <ChatOptimisticRenderer sseData={sseData} userChatData={userChatData} isReceivingResponse={isReceivingResponse} />
     );
   }
 
-  // 일반
+  // 일반 모드 (메시지 히스토리 API 호출)
   return (
     <>
-      {!isOptimistic && isLoading ? (
+      {isLoading ? (
         <ChatMessageSkeleton />
       ) : (
-        historyMessages?.data?.map((message: ChatMessageType) =>
-          message.role === "user" ? (
-            <UserChatBox key={message.id} content={message.content} images={message.images ?? []} />
-          ) : (
-            <BotChatLayout
-              key={message.id}
-              content={message.content}
-              modelName={message.model}
-              createdAt={message.createdAt}
-            />
-          ),
-        )
+        <>
+          {historyMessages?.data?.map((message: ChatMessageType) =>
+            message.role === "user" ? (
+              <UserChatBox key={message.id} content={message.content} images={message.images ?? []} />
+            ) : (
+              <BotChatLayout
+                key={message.id}
+                content={message.content}
+                modelName={message.model}
+                createdAt={message.createdAt}
+                errorType={message.errorType as SSEChatErrorType}
+                errorMessage={message.errorMessage || ""}
+              />
+            ),
+          )}
+          {!isLastBotMessage && <BotChatEmpty />}
+        </>
       )}
     </>
   );

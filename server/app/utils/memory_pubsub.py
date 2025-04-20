@@ -93,6 +93,18 @@ class AsyncInMemoryPubSub:
         return True
       return False
   
+  def exists(self, key: str) -> bool:
+    """키 존재 여부 확인 (Redis exists 호환)"""
+    with self._storage_lock:
+      # 만료 확인
+      if key in self._expiry and time.time() > self._expiry[key]:
+        # 만료된 키 삭제
+        del self._storage[key]
+        del self._expiry[key]
+        return False
+      
+      return key in self._storage
+  
   def clear_channel(self, channel: str) -> bool:
     """채널의 모든 메시지 제거"""
     if channel in self._channels:
