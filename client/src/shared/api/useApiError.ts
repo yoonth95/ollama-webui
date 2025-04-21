@@ -85,6 +85,7 @@ export const useApiError = () => {
 
     if (type !== "display") {
       showError(type, errorMessage, statusCode);
+      toast.clearWaitingQueue();
     }
 
     return { errorMessage, statusCode };
