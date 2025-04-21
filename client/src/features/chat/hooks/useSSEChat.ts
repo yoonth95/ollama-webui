@@ -104,6 +104,8 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
           error: true,
           errorType: errorData.error_type || "UNKNOWN",
           errorMessage: errorData.message || "알 수 없는 오류가 발생했습니다",
+          model: errorData.model || "",
+          createdAt: errorData.created_at || "",
         });
         setIsReceivingResponse(false);
 
@@ -125,6 +127,8 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
           error: true,
           errorType: "CONNECTION",
           errorMessage: "연결 중 오류가 발생했습니다",
+          model: "",
+          createdAt: "",
         });
         setIsReceivingResponse(false);
 
