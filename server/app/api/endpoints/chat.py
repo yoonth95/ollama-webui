@@ -30,12 +30,9 @@ SSE_TIMEOUT = 60 * 30  # 30분
 async def get_chatting_history(room_id: str, db: Session = Depends(get_db)):
   """채팅방 조회"""
   logger.info(f"📩 클라이언트 채팅방 조회: {room_id}")
-  
   response = await ChatService.get_chatting_history(db, room_id)
-
   if not response:
     return JSONResponse(content=create_response(False, "존재하지 않는 채팅방입니다.", None), status_code=404)
-
   return JSONResponse(content=create_response(True, "채팅 내역 조회", response), status_code=200)
 
 @router.get("/chat/stream/{room_id}")
@@ -269,3 +266,14 @@ async def force_stop_chat(request: ChatForceStopRequestType):
   await ChatService.force_stop_chat(room_id)
   
   return JSONResponse(content=create_response(True, "채팅 강제 중단 완료", None), status_code=200)
+
+@router.post("/chat/retry")
+@handle_exceptions
+async def retry_answer(request: ChatRetryRequestType, db: Session = Depends(get_db)):
+  """답변 재시도"""
+  logger.info(f"📩 클라이언트 답변 재시도: answer_id={request.answer_id}, user_message_id={request.user_message_id}")
+  
+  state, message, status_code = await ChatService.retry_answer(db, request.room_id, request.user_message_id, request.answer_id, request.is_error_retry)
+  
+  print("state", state, "message", message, "status_code", status_code)
+  return JSONResponse(content=create_response(state, message, None), status_code=status_code)
