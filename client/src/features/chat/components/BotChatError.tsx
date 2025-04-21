@@ -26,7 +26,7 @@ export default function BotChatError({ errorType, errorMessage }: BotChatErrorPr
           </p>
         </div>
 
-        <div className="mt-2 flex flex-wrap justify-between gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"

@@ -1,4 +1,4 @@
-import { BotChatError, BotChatLayout, UserChatBox } from "@/features/chat/components";
+import { BotChatError, BotChatLayout, UserChatBox, BotChatHeader } from "@/features/chat/components";
 import { userChatDataType } from "@/shared/stores/useChatOptimisticStore";
 import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
 import { LoaderCircle } from "lucide-react";
@@ -14,7 +14,10 @@ const ChatOptimisticRenderer = ({ sseData, userChatData, isReceivingResponse }: 
       {userChatData.content && <UserChatBox content={userChatData.content} images={userChatData.images ?? []} />}
 
       {sseData.error ? (
-        <BotChatError errorType={sseData.errorType} errorMessage={sseData.errorMessage} />
+        <article className="bot-message group flex w-full flex-col justify-start">
+          <BotChatHeader modelName={sseData.model} createdAt={sseData.createdAt} />
+          <BotChatError errorType={sseData.errorType} errorMessage={sseData.errorMessage} />
+        </article>
       ) : isReceivingResponse && !sseData.content ? (
         <div className="py-2">
           <LoaderCircle className="h-6 w-6 animate-spin" />
