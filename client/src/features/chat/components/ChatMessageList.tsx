@@ -25,7 +25,7 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
       ]),
     );
 
-  const { data: historyMessages, isLoading, isLastBotMessage } = useGetChatMessages(chatRoomId, isOptimistic);
+  const { data: historyMessages, isLoading, isLastBotMessage, isError } = useGetChatMessages(chatRoomId, isOptimistic);
 
   // 일반 모드에서 채팅 히스토리 로드 완료 시 optimistic 모드 해제
   useEffect(() => {
@@ -39,6 +39,8 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
     isOptimistic,
     setIsReceivingResponse,
   });
+
+  if (isError) throw new Error("채팅 메시지 로드 오류");
 
   // Optimistic 모드
   if (isOptimistic) {
