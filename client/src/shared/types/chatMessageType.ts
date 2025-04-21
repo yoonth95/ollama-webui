@@ -16,6 +16,7 @@ export const ChatMessageSchema = z.object({
   images: z.array(ImageDataSchema).nullable(),
   errorType: SSEChatErrorTypeSchema.nullable(),
   errorMessage: z.string().nullable(),
+  userMessageId: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
