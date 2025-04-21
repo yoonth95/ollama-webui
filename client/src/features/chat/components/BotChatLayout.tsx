@@ -37,7 +37,7 @@ const BotChatLayout = ({ isRetry, content, modelName, createdAt, errorType, erro
         )}
 
         {/* 툴바 */}
-        {!hasError && !isThinking && !isRetry && <BotChatToolbar content={mainContent || "응답 없음."} />}
+        {!hasError && !isRetry && <BotChatToolbar content={mainContent || "응답 없음."} />}
       </div>
     </article>
   );
