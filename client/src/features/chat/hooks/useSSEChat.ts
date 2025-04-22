@@ -7,22 +7,20 @@ import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
 /**
  * 채팅방 SSE 연결을 관리하는 훅
  * @param chatRoomId 채팅방 ID
- * @param isOptimistic 최적화 모드 여부
  * @returns SSE 응답 데이터와 상태, 중단 함수들
  */
 interface UseSSEChatPropsType {
   chatRoomId: string;
-  isOptimistic?: boolean;
 }
-export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatPropsType) => {
+export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
   const { mutate: regularCancelMutation } = useChatCancel(false); // 일반 중단
   const { mutate: forceStopMutation } = useChatCancel(true); // 강제 중단
 
   const setIsReceivingResponse = useChatOptimisticStore((state) => state.setIsReceivingResponse);
 
   // SSE 이벤트 소스 스토어
-  const [addEventSource, closeEventSource] = useSSEEventSourceStore(
-    useShallow((state) => [state.addEventSource, state.closeEventSource]),
+  const [isStartSSE, setIsStartSSE, addEventSource, closeEventSource] = useSSEEventSourceStore(
+    useShallow((state) => [state.isStartSSE, state.setIsStartSSE, state.addEventSource, state.closeEventSource]),
   );
 
   const [sseData, setSseData] = useState<SSEChatDataType>({
@@ -33,8 +31,9 @@ export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatProps
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    // 채팅방 ID가 없는 경우 연결하지 않음
-    if (!chatRoomId || !isOptimistic) {
+    // 채팅방 ID가 없거나 SSE 연결 시작 상태가 아닌 경우 연결하지 않음
+    console.log("isStartSSE", isStartSSE);
+    if (!chatRoomId || !isStartSSE) {
       return;
     }
 
@@ -85,12 +84,15 @@ export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatProps
           responseData.isReceiving = false;
           setSseData(responseData);
           setIsReceivingResponse(false);
+          closeEventSource(chatRoomId);
+          setIsStartSSE(false);
         }
       } catch (error) {
         console.error("SSE 메시지 파싱 오류:", error);
         regularCancelMutation({ roomId: chatRoomId });
         setIsReceivingResponse(false);
         closeEventSource(chatRoomId);
+        setIsStartSSE(false);
       }
     });
 
@@ -123,6 +125,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatProps
         }
         console.error("SSE 오류:", errorData.message || "메시지를 받는 중 오류가 발생했습니다");
         closeEventSource(chatRoomId);
+        setIsStartSSE(false);
       } catch {
         // 기본 오류 처리
         setSseData({
@@ -140,6 +143,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatProps
         console.error("서버 연결 중 오류가 발생했습니다");
         regularCancelMutation({ roomId: chatRoomId });
         closeEventSource(chatRoomId);
+        setIsStartSSE(false);
       }
     });
 
@@ -160,6 +164,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatProps
       console.warn("연결 시간이 초과되었습니다");
       regularCancelMutation({ roomId: chatRoomId });
       closeEventSource(chatRoomId);
+      setIsStartSSE(false);
     });
 
     // 비활성 이벤트
@@ -172,6 +177,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatProps
       setIsReceivingResponse(false);
 
       console.info("장시간 활동이 없어 연결이 종료되었습니다");
+      setIsStartSSE(false);
       forceStopMutation({ roomId: chatRoomId });
       closeEventSource(chatRoomId);
     });
@@ -191,7 +197,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatProps
     };
   }, [
     chatRoomId,
-    isOptimistic,
+    isStartSSE,
     regularCancelMutation,
     forceStopMutation,
     setIsReceivingResponse,
