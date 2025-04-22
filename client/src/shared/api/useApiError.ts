@@ -20,15 +20,23 @@ export const useApiError = () => {
     let statusCode = 500;
 
     if (axios.isAxiosError(error)) {
-      // 완전한 서버 연결 실패 케이스
-      if (
-        !error.response ||
-        error.code === "ECONNABORTED" ||
-        error.code === "ETIMEDOUT" ||
-        error.message.includes("Network Error")
-      ) {
-        errorMessage = "서버 연결이 원활하지 않습니다.";
-        statusCode = 500;
+      const isTimeoutError = error.code === "ECONNABORTED" || error.code === "ETIMEDOUT";
+      const isNetworkError = error.message.includes("Network Error");
+
+      if (!error.response) {
+        if (isTimeoutError) {
+          console.log("Timeout Error:", error);
+          errorMessage = "서버 응답이 지연되고 있습니다. \n잠시 후 다시 시도해주세요.";
+          statusCode = 504;
+        } else if (isNetworkError) {
+          console.log("Network Error:", error);
+          errorMessage = "네트워크 연결이 불안정합니다.";
+          statusCode = 503;
+        } else {
+          console.log("Unknown connection error:", error);
+          errorMessage = "서버 연결이 원활하지 않습니다.";
+          statusCode = 500;
+        }
       }
       // 프록시나 서버에서 잘못된 응답을 준 경우
       else if (error.code === "ERR_BAD_RESPONSE") {
