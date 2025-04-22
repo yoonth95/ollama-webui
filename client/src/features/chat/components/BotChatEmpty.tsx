@@ -1,7 +1,19 @@
 import { Button } from "@/shared/ui/button";
+import useMessageRetry from "@/features/chat/queries/useMessageRetry";
 import { AlertTriangle } from "lucide-react";
 
-const BotChatEmpty = () => {
+const BotChatEmpty = ({ roomId }: { roomId: string }) => {
+  const { mutate: retryMessageMutation } = useMessageRetry(roomId);
+
+  const handleRetryMessage = () => {
+    retryMessageMutation({
+      roomId,
+      userMessageId: "",
+      answerId: "",
+      isErrorRetry: false,
+    });
+  };
+
   return (
     <div className="py-5">
       <div className="w-full">
@@ -14,7 +26,9 @@ const BotChatEmpty = () => {
             </div>
           </div>
           <div className="flex items-center justify-end gap-2">
-            <Button variant="outline">재시도</Button>
+            <Button variant="outline" onClick={handleRetryMessage}>
+              재시도
+            </Button>
           </div>
         </div>
       </div>

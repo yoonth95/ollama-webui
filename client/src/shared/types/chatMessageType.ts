@@ -24,9 +24,10 @@ export const ChatMessageSchema = z.object({
 export const ChatMessageArraySchema = z.array(ChatMessageSchema);
 
 export const ChatRetryRequestSchema = z.object({
-  userMessageId: z.string(),
+  roomId: z.string(),
+  userMessageId: z.string().nullable(),
   answerId: z.string().nullable(),
-  isErrorRetry: z.boolean().optional().default(false),
+  isErrorRetry: z.boolean(),
 });
 
 export type ImageDataType = z.infer<typeof ImageDataSchema>;
