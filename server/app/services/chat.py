@@ -940,8 +940,8 @@ class ChatService:
         ollama_request["messages"][0]["images"] = images
       
       logger.info(f"답변 재시도 시작 (answer_id: {answer_id}, user_message_id: {user_message.id})")
-      await ChatService.generate_ollama_answer(room_id, ollama_request, user_message.id, answer_id)  
-      return True, "재시도 완료", 200
+      asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request, user_message.id, answer_id))  
+      return True, "답변 재시도 시작", 200
     except Exception as e:
       logger.error(f"Room {room_id}: 답변 재시도 중 오류 발생: {str(e)}")
       return False, f"오류가 발생했습니다: {str(e)}", 500
