@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useShallow } from "zustand/shallow";
 import {
   BotChatLayout,
@@ -14,38 +13,20 @@ import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
 
 const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
-  const [userChatData, isOptimistic, isReceivingResponse, deactivateOptimisticUI] = useChatOptimisticStore(
-    useShallow((state) => [
-      state.userChatData,
-      state.isOptimistic,
-      state.isReceivingResponse,
-      state.deactivateOptimisticUI,
-    ]),
+  const [userChatData, isOptimistic] = useChatOptimisticStore(
+    useShallow((state) => [state.userChatData, state.isOptimistic]),
   );
 
   const { data: historyMessages, isLoading, isLastBotMessage, isError } = useGetChatMessages(chatRoomId, isOptimistic);
 
-  // 일반 모드에서 채팅 히스토리 로드 완료 시 optimistic 모드 해제
-  useEffect(() => {
-    if (!isLoading && historyMessages?.data && historyMessages.data.length > 0 && isOptimistic) {
-      deactivateOptimisticUI();
-    }
-  }, [isLoading, historyMessages, isOptimistic, deactivateOptimisticUI]);
-
+  // sse 연결 및 데이터 가져오기
   const { sseData } = useSSEChat({ chatRoomId });
 
   if (isError) throw new Error("채팅 메시지 로드 오류");
 
   // Optimistic 모드
   if (isOptimistic) {
-    return (
-      <ChatOptimisticRenderer
-        sseData={sseData}
-        userChatData={userChatData}
-        isReceivingResponse={isReceivingResponse}
-        roomId={chatRoomId}
-      />
-    );
+    return <ChatOptimisticRenderer sseData={sseData} userChatData={userChatData} roomId={chatRoomId} />;
   }
 
   // 일반 모드 (메시지 히스토리 API 호출)
