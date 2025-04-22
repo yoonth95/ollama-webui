@@ -7,8 +7,14 @@ interface ChatOptimisticRendererPropsType {
   sseData: SSEChatDataType;
   userChatData: userChatDataType;
   isReceivingResponse: boolean;
+  roomId: string;
 }
-const ChatOptimisticRenderer = ({ sseData, userChatData, isReceivingResponse }: ChatOptimisticRendererPropsType) => {
+const ChatOptimisticRenderer = ({
+  sseData,
+  userChatData,
+  isReceivingResponse,
+  roomId,
+}: ChatOptimisticRendererPropsType) => {
   return (
     <>
       {userChatData.content && <UserChatBox content={userChatData.content} images={userChatData.images ?? []} />}
@@ -16,7 +22,13 @@ const ChatOptimisticRenderer = ({ sseData, userChatData, isReceivingResponse }: 
       {sseData.error ? (
         <article className="bot-message group flex w-full flex-col justify-start">
           <BotChatHeader modelName={sseData.model} createdAt={sseData.createdAt} />
-          <BotChatError errorType={sseData.errorType} errorMessage={sseData.errorMessage} />
+          <BotChatError
+            roomId={roomId}
+            userMessageId={sseData.userMessageId}
+            answerId={sseData.answerId}
+            errorType={sseData.errorType}
+            errorMessage={sseData.errorMessage}
+          />
         </article>
       ) : isReceivingResponse && !sseData.content ? (
         <div className="py-2">
@@ -28,6 +40,9 @@ const ChatOptimisticRenderer = ({ sseData, userChatData, isReceivingResponse }: 
           content={sseData.content}
           modelName={sseData.model || ""}
           createdAt={sseData.createdAt || ""}
+          roomId={roomId}
+          userMessageId={sseData.userMessageId}
+          answerId={sseData.answerId}
         />
       ) : null}
     </>

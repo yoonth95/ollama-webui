@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useShallow } from "zustand/shallow";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
 import useChatCancel from "@/features/chat/queries/useChatCancel";
 import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
-
 /**
  * 채팅방 SSE 연결을 관리하는 훅
  * @param chatRoomId 채팅방 ID
@@ -12,12 +12,13 @@ import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
  */
 interface UseSSEChatPropsType {
   chatRoomId: string;
-  isOptimistic: boolean;
-  setIsReceivingResponse: (isReceivingResponse: boolean) => void;
+  isOptimistic?: boolean;
 }
-export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }: UseSSEChatPropsType) => {
+export const useSSEChat = ({ chatRoomId, isOptimistic = false }: UseSSEChatPropsType) => {
   const { mutate: regularCancelMutation } = useChatCancel(false); // 일반 중단
   const { mutate: forceStopMutation } = useChatCancel(true); // 강제 중단
+
+  const setIsReceivingResponse = useChatOptimisticStore((state) => state.setIsReceivingResponse);
 
   // SSE 이벤트 소스 스토어
   const [addEventSource, closeEventSource] = useSSEEventSourceStore(
@@ -27,6 +28,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
   const [sseData, setSseData] = useState<SSEChatDataType>({
     isReceiving: false,
     content: "",
+    userMessageId: "",
   });
   const eventSourceRef = useRef<EventSource | null>(null);
 
@@ -37,7 +39,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
     }
 
     // SSE 연결 시작 상태 설정
-    setSseData({ isReceiving: true, content: "" });
+    setSseData({ isReceiving: true, content: "", userMessageId: "" });
 
     // SSE 연결 생성
     const eventSource = new EventSource(`/api/v1/chat/stream/${chatRoomId}`);
@@ -62,6 +64,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
           content: data.full,
           model: data.model,
           createdAt: data.created_at,
+          userMessageId: data.user_message_id,
         };
 
         // 서버에서 오류 발생 시 재시도 메시지
@@ -106,6 +109,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
           errorMessage: errorData.message || "알 수 없는 오류가 발생했습니다",
           model: errorData.model || "",
           createdAt: errorData.created_at || "",
+          userMessageId: errorData.user_message_id || "",
         });
         setIsReceivingResponse(false);
 
@@ -129,6 +133,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
           errorMessage: "연결 중 오류가 발생했습니다",
           model: "",
           createdAt: "",
+          userMessageId: "",
         });
         setIsReceivingResponse(false);
 
@@ -146,6 +151,9 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
         error: true,
         errorType: "TIMEOUT",
         errorMessage: "연결 시간이 초과되었습니다",
+        model: "",
+        createdAt: "",
+        userMessageId: "",
       });
       setIsReceivingResponse(false);
 
@@ -159,6 +167,7 @@ export const useSSEChat = ({ chatRoomId, isOptimistic, setIsReceivingResponse }:
       setSseData({
         isReceiving: false,
         content: "",
+        userMessageId: "",
       });
       setIsReceivingResponse(false);
 

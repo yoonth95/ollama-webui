@@ -11,6 +11,8 @@ export const SSEChatDataTypeSchema = z.object({
   error: z.boolean().optional(),
   errorType: SSEChatErrorTypeSchema.optional(),
   errorMessage: z.string().optional(),
+  userMessageId: z.string(),
+  answerId: z.string().optional(),
 });
 
 export const ChatCancelRequestSchema = z.object({

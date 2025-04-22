@@ -14,16 +14,14 @@ import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
 
 const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
-  const [userChatData, isOptimistic, isReceivingResponse, deactivateOptimisticUI, setIsReceivingResponse] =
-    useChatOptimisticStore(
-      useShallow((state) => [
-        state.userChatData,
-        state.isOptimistic,
-        state.isReceivingResponse,
-        state.deactivateOptimisticUI,
-        state.setIsReceivingResponse,
-      ]),
-    );
+  const [userChatData, isOptimistic, isReceivingResponse, deactivateOptimisticUI] = useChatOptimisticStore(
+    useShallow((state) => [
+      state.userChatData,
+      state.isOptimistic,
+      state.isReceivingResponse,
+      state.deactivateOptimisticUI,
+    ]),
+  );
 
   const { data: historyMessages, isLoading, isLastBotMessage, isError } = useGetChatMessages(chatRoomId, isOptimistic);
 
@@ -34,18 +32,19 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
     }
   }, [isLoading, historyMessages, isOptimistic, deactivateOptimisticUI]);
 
-  const { sseData } = useSSEChat({
-    chatRoomId,
-    isOptimistic,
-    setIsReceivingResponse,
-  });
+  const { sseData } = useSSEChat({ chatRoomId });
 
   if (isError) throw new Error("채팅 메시지 로드 오류");
 
   // Optimistic 모드
   if (isOptimistic) {
     return (
-      <ChatOptimisticRenderer sseData={sseData} userChatData={userChatData} isReceivingResponse={isReceivingResponse} />
+      <ChatOptimisticRenderer
+        sseData={sseData}
+        userChatData={userChatData}
+        isReceivingResponse={isReceivingResponse}
+        roomId={chatRoomId}
+      />
     );
   }
 
@@ -67,10 +66,13 @@ const ChatMessageList = ({ chatRoomId }: { chatRoomId: string }) => {
                 createdAt={message.createdAt}
                 errorType={message.errorType as SSEChatErrorType}
                 errorMessage={message.errorMessage || ""}
+                roomId={chatRoomId}
+                userMessageId={message.userMessageId ?? ""}
+                answerId={message.id ?? undefined}
               />
             ),
           )}
-          {!isLastBotMessage && <BotChatEmpty />}
+          {!isLastBotMessage && <BotChatEmpty roomId={chatRoomId} />}
         </>
       )}
     </>

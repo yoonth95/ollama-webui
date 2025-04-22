@@ -15,8 +15,21 @@ export interface BotChatLayoutPropsType {
   createdAt?: string;
   errorType?: SSEChatErrorType;
   errorMessage?: string;
+  roomId: string;
+  userMessageId: string;
+  answerId?: string;
 }
-const BotChatLayout = ({ isRetry, content, modelName, createdAt, errorType, errorMessage }: BotChatLayoutPropsType) => {
+const BotChatLayout = ({
+  isRetry,
+  content,
+  modelName,
+  createdAt,
+  errorType,
+  errorMessage,
+  roomId,
+  userMessageId,
+  answerId,
+}: BotChatLayoutPropsType) => {
   const { thinkContent, mainContent, isThinking } = useThinkContent(content);
   const hasError = errorType && errorMessage;
 
@@ -31,7 +44,13 @@ const BotChatLayout = ({ isRetry, content, modelName, createdAt, errorType, erro
 
         {/* 본문 내용 */}
         {hasError ? (
-          <BotChatError errorType={errorType} errorMessage={errorMessage} />
+          <BotChatError
+            roomId={roomId}
+            userMessageId={userMessageId}
+            answerId={answerId}
+            errorType={errorType}
+            errorMessage={errorMessage}
+          />
         ) : (
           <BotChatContent isRetry={isRetry} mainContent={mainContent} content={content} isError={Boolean(hasError)} />
         )}
