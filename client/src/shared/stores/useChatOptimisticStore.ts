@@ -9,12 +9,10 @@ export type userChatDataType = {
 interface ChatOptimisticStoreType {
   isOptimistic: boolean;
   isCreateRoomLoading: boolean;
-  isReceivingResponse: boolean;
   userChatData: userChatDataType;
 
   activateOptimisticUI: () => void;
   deactivateOptimisticUI: () => void;
-  setIsReceivingResponse: (isReceivingResponse: boolean) => void;
   setIsCreateRoomLoading: (isCreateRoomLoading: boolean) => void;
   setUserChatData: (userChatData: userChatDataType) => void;
   clearUserChatData: () => void;
@@ -23,7 +21,6 @@ interface ChatOptimisticStoreType {
 export const useChatOptimisticStore = create<ChatOptimisticStoreType>((set) => ({
   isOptimistic: false,
   isCreateRoomLoading: false,
-  isReceivingResponse: false,
   userChatData: { content: "", images: [] },
 
   activateOptimisticUI: () =>
@@ -36,10 +33,8 @@ export const useChatOptimisticStore = create<ChatOptimisticStoreType>((set) => (
     set({
       isOptimistic: false,
       isCreateRoomLoading: false,
-      isReceivingResponse: false,
     }),
 
-  setIsReceivingResponse: (isReceivingResponse: boolean) => set({ isReceivingResponse }),
   setIsCreateRoomLoading: (isCreateRoomLoading) => set({ isCreateRoomLoading }),
   setUserChatData: (userChatData) => set({ userChatData }),
   clearUserChatData: () => set({ userChatData: { content: "", images: [] } }),

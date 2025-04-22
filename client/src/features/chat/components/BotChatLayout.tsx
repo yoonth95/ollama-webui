@@ -10,7 +10,7 @@ import { SSEChatErrorType } from "@/features/chat/types/sseChatDataType";
 
 export interface BotChatLayoutPropsType {
   isRetry?: boolean;
-  isReceivingResponse?: boolean;
+  isStartSSE?: boolean;
   content: string;
   modelName?: string;
   createdAt?: string;
@@ -22,7 +22,7 @@ export interface BotChatLayoutPropsType {
 }
 const BotChatLayout = ({
   isRetry,
-  isReceivingResponse,
+  isStartSSE,
   content,
   modelName,
   createdAt,
@@ -58,7 +58,7 @@ const BotChatLayout = ({
         )}
 
         {/* 툴바 */}
-        {!hasError && !isReceivingResponse && !isRetry && <BotChatToolbar content={mainContent || "응답 없음."} />}
+        {!hasError && !isStartSSE && !isRetry && <BotChatToolbar content={mainContent || "응답 없음."} />}
       </div>
     </article>
   );

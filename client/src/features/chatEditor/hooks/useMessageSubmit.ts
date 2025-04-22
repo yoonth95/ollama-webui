@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import useCreateChatRoom from "@/features/chatEditor/queries/useCreateChatRoom";
 import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
-import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
+import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
 
 const TOAST_ID = "model-select-toast";
 
@@ -14,7 +14,7 @@ interface MessageSubmitPropsType {
 export const useMessageSubmit = ({ editorRef, chatRoomId }: MessageSubmitPropsType) => {
   const selectedModel = useModelSelectStore((state) => state.selectedModel);
   const getImages = useEditorImageStore((state) => state.getImages);
-  const { isReceivingResponse } = useChatOptimisticStore();
+  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
 
   const { mutate: createChatRoom, isPending: isCreatingRoom } = useCreateChatRoom();
 
@@ -23,7 +23,7 @@ export const useMessageSubmit = ({ editorRef, chatRoomId }: MessageSubmitPropsTy
 
   const handleSubmit = async () => {
     // 채팅방 생성 중이거나, 응답(답변) 수신 중이면 비활성화
-    if (isCreatingRoom || isReceivingResponse) return;
+    if (isCreatingRoom || isStartSSE) return;
 
     if (!selectedModel) {
       if (!toast.isActive(TOAST_ID)) {
