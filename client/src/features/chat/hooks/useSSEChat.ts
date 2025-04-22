@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useShallow } from "zustand/shallow";
-import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import useChatCancel from "@/features/chat/queries/useChatCancel";
 import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
+
 /**
  * 채팅방 SSE 연결을 관리하는 훅
  * @param chatRoomId 채팅방 ID
@@ -16,12 +17,12 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
   const { mutate: regularCancelMutation } = useChatCancel(false); // 일반 중단
   const { mutate: forceStopMutation } = useChatCancel(true); // 강제 중단
 
-  const setIsReceivingResponse = useChatOptimisticStore((state) => state.setIsReceivingResponse);
-
   // SSE 이벤트 소스 스토어
   const [isStartSSE, setIsStartSSE, addEventSource, closeEventSource] = useSSEEventSourceStore(
     useShallow((state) => [state.isStartSSE, state.setIsStartSSE, state.addEventSource, state.closeEventSource]),
   );
+
+  const deactivateOptimisticUI = useChatOptimisticStore((state) => state.deactivateOptimisticUI);
 
   const [sseData, setSseData] = useState<SSEChatDataType>({
     isReceiving: false,
@@ -30,31 +31,36 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
   });
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  const cleanupConnection = useCallback(() => {
+    if (chatRoomId) {
+      closeEventSource(chatRoomId);
+      setIsStartSSE(false);
+      deactivateOptimisticUI();
+      eventSourceRef.current = null;
+    }
+  }, [chatRoomId, closeEventSource, setIsStartSSE, deactivateOptimisticUI]);
+
   useEffect(() => {
     // 채팅방 ID가 없거나 SSE 연결 시작 상태가 아닌 경우 연결하지 않음
-    console.log("isStartSSE", isStartSSE);
-    if (!chatRoomId || !isStartSSE) {
-      return;
-    }
+    if (!chatRoomId || !isStartSSE) return;
 
-    // SSE 연결 시작 상태 설정
+    // SSE 데이터 초기화
     setSseData({ isReceiving: true, content: "", userMessageId: "" });
 
-    // SSE 연결 생성
+    // SSE 연결
     const eventSource = new EventSource(`/api/v1/chat/stream/${chatRoomId}`);
     eventSourceRef.current = eventSource;
 
     addEventSource(chatRoomId, eventSource);
 
-    // 연결 성공 이벤트
+    // 연결 성공
     eventSource.addEventListener("connected", (event) => {
       console.log("SSE 연결 성공:", event.data);
     });
 
-    // 메시지 이벤트
+    // 메시지
     eventSource.addEventListener("message", (event) => {
       try {
-        setIsReceivingResponse(true);
         const data = JSON.parse(event.data);
 
         const responseData = {
@@ -83,16 +89,12 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
         if (data.done) {
           responseData.isReceiving = false;
           setSseData(responseData);
-          setIsReceivingResponse(false);
-          closeEventSource(chatRoomId);
-          setIsStartSSE(false);
+          cleanupConnection();
         }
       } catch (error) {
         console.error("SSE 메시지 파싱 오류:", error);
         regularCancelMutation({ roomId: chatRoomId });
-        setIsReceivingResponse(false);
-        closeEventSource(chatRoomId);
-        setIsStartSSE(false);
+        cleanupConnection();
       }
     });
 
@@ -113,7 +115,6 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
           createdAt: errorData.created_at || "",
           userMessageId: errorData.user_message_id || "",
         });
-        setIsReceivingResponse(false);
 
         const errorType = errorData.error_type;
         if (errorType === "NETWORK" || errorType === "TIMEOUT") {
@@ -124,8 +125,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
           regularCancelMutation({ roomId: chatRoomId });
         }
         console.error("SSE 오류:", errorData.message || "메시지를 받는 중 오류가 발생했습니다");
-        closeEventSource(chatRoomId);
-        setIsStartSSE(false);
+        cleanupConnection();
       } catch {
         // 기본 오류 처리
         setSseData({
@@ -138,12 +138,10 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
           createdAt: "",
           userMessageId: "",
         });
-        setIsReceivingResponse(false);
 
         console.error("서버 연결 중 오류가 발생했습니다");
         regularCancelMutation({ roomId: chatRoomId });
-        closeEventSource(chatRoomId);
-        setIsStartSSE(false);
+        cleanupConnection();
       }
     });
 
@@ -159,12 +157,10 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
         createdAt: "",
         userMessageId: "",
       });
-      setIsReceivingResponse(false);
 
       console.warn("연결 시간이 초과되었습니다");
       regularCancelMutation({ roomId: chatRoomId });
-      closeEventSource(chatRoomId);
-      setIsStartSSE(false);
+      cleanupConnection();
     });
 
     // 비활성 이벤트
@@ -174,12 +170,10 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
         content: "",
         userMessageId: "",
       });
-      setIsReceivingResponse(false);
 
       console.info("장시간 활동이 없어 연결이 종료되었습니다");
-      setIsStartSSE(false);
       forceStopMutation({ roomId: chatRoomId });
-      closeEventSource(chatRoomId);
+      cleanupConnection();
     });
 
     // 핑-퐁 이벤트 (서버 연결 유지용)
@@ -200,9 +194,9 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     isStartSSE,
     regularCancelMutation,
     forceStopMutation,
-    setIsReceivingResponse,
     addEventSource,
     closeEventSource,
+    cleanupConnection,
   ]);
 
   // 사용자가 직접 호출할 수 있는 중단 함수들
@@ -210,10 +204,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     if (chatRoomId) {
       console.log("사용자 요청에 의한 일반 중단");
       regularCancelMutation({ roomId: chatRoomId });
-      setIsReceivingResponse(false);
-
-      closeEventSource(chatRoomId);
-      eventSourceRef.current = null;
+      cleanupConnection();
     }
   };
 
@@ -221,10 +212,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     if (chatRoomId) {
       console.log("사용자 요청에 의한 강제 중단");
       forceStopMutation({ roomId: chatRoomId });
-      setIsReceivingResponse(false);
-
-      closeEventSource(chatRoomId);
-      eventSourceRef.current = null;
+      cleanupConnection();
     }
   };
 
