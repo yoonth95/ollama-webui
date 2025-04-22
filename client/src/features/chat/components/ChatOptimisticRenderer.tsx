@@ -1,20 +1,17 @@
-import { BotChatError, BotChatLayout, UserChatBox, BotChatHeader } from "@/features/chat/components";
 import { userChatDataType } from "@/shared/stores/useChatOptimisticStore";
+import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
+import { BotChatError, BotChatLayout, UserChatBox, BotChatHeader } from "@/features/chat/components";
 import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
 import { LoaderCircle } from "lucide-react";
 
 interface ChatOptimisticRendererPropsType {
   sseData: SSEChatDataType;
   userChatData: userChatDataType;
-  isReceivingResponse: boolean;
   roomId: string;
 }
-const ChatOptimisticRenderer = ({
-  sseData,
-  userChatData,
-  isReceivingResponse,
-  roomId,
-}: ChatOptimisticRendererPropsType) => {
+const ChatOptimisticRenderer = ({ sseData, userChatData, roomId }: ChatOptimisticRendererPropsType) => {
+  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
+
   return (
     <>
       {userChatData.content && <UserChatBox content={userChatData.content} images={userChatData.images ?? []} />}
@@ -30,14 +27,14 @@ const ChatOptimisticRenderer = ({
             errorMessage={sseData.errorMessage}
           />
         </article>
-      ) : isReceivingResponse && !sseData.content ? (
+      ) : isStartSSE && !sseData.content ? (
         <div className="py-2">
           <LoaderCircle className="h-6 w-6 animate-spin" />
         </div>
       ) : sseData.content ? (
         <BotChatLayout
           isRetry={sseData.isRetry}
-          isReceivingResponse={isReceivingResponse}
+          isStartSSE={isStartSSE}
           content={sseData.content}
           modelName={sseData.model || ""}
           createdAt={sseData.createdAt || ""}
