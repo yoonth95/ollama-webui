@@ -37,6 +37,7 @@ const ChatOptimisticRenderer = ({
       ) : sseData.content ? (
         <BotChatLayout
           isRetry={sseData.isRetry}
+          isReceivingResponse={isReceivingResponse}
           content={sseData.content}
           modelName={sseData.model || ""}
           createdAt={sseData.createdAt || ""}
