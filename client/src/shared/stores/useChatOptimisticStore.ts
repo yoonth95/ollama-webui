@@ -1,27 +1,28 @@
 import { create } from "zustand";
-import { ImageDataType } from "@/shared/types/chatMessageType";
-
-export type userChatDataType = {
-  content: string;
-  images: ImageDataType[];
-};
+import { ChatMessageType } from "@/shared/types/chatMessageType";
 
 interface ChatOptimisticStoreType {
   isOptimistic: boolean;
   isCreateRoomLoading: boolean;
-  userChatData: userChatDataType;
+  isRetryLoading: boolean;
+  isRetryCompleted: boolean;
+  ChatDataList: ChatMessageType[];
 
   activateOptimisticUI: () => void;
   deactivateOptimisticUI: () => void;
   setIsCreateRoomLoading: (isCreateRoomLoading: boolean) => void;
-  setUserChatData: (userChatData: userChatDataType) => void;
-  clearUserChatData: () => void;
+  setIsRetryLoading: (isRetryLoading: boolean) => void;
+  setIsRetryCompleted: (isRetryCompleted: boolean) => void;
+  setChatDataList: (ChatDataList: ChatMessageType[]) => void;
+  clearChatDataList: () => void;
 }
 
 export const useChatOptimisticStore = create<ChatOptimisticStoreType>((set) => ({
   isOptimistic: false,
   isCreateRoomLoading: false,
-  userChatData: { content: "", images: [] },
+  isRetryLoading: false,
+  isRetryCompleted: false,
+  ChatDataList: [],
 
   activateOptimisticUI: () =>
     set({
@@ -35,7 +36,9 @@ export const useChatOptimisticStore = create<ChatOptimisticStoreType>((set) => (
       isCreateRoomLoading: false,
     }),
 
+  setIsRetryLoading: (isRetryLoading) => set({ isRetryLoading }),
+  setIsRetryCompleted: (isRetryCompleted) => set({ isRetryCompleted }),
   setIsCreateRoomLoading: (isCreateRoomLoading) => set({ isCreateRoomLoading }),
-  setUserChatData: (userChatData) => set({ userChatData }),
-  clearUserChatData: () => set({ userChatData: { content: "", images: [] } }),
+  setChatDataList: (ChatDataList) => set({ ChatDataList }),
+  clearChatDataList: () => set({ ChatDataList: [] }),
 }));

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/shallow";
+import { queryKeys } from "@/shared/api";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import useChatCancel from "@/features/chat/queries/useChatCancel";
@@ -14,48 +16,93 @@ interface UseSSEChatPropsType {
   chatRoomId: string;
 }
 export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
-  const { mutate: regularCancelMutation } = useChatCancel(false); // 일반 중단
-  const { mutate: forceStopMutation } = useChatCancel(true); // 강제 중단
-
-  // SSE 이벤트 소스 스토어
-  const [isStartSSE, setIsStartSSE, addEventSource, closeEventSource] = useSSEEventSourceStore(
-    useShallow((state) => [state.isStartSSE, state.setIsStartSSE, state.addEventSource, state.closeEventSource]),
-  );
-
-  const deactivateOptimisticUI = useChatOptimisticStore((state) => state.deactivateOptimisticUI);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const isConnectingRef = useRef<boolean>(false);
 
   const [sseData, setSseData] = useState<SSEChatDataType>({
     isReceiving: false,
     content: "",
     userMessageId: "",
   });
-  const eventSourceRef = useRef<EventSource | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const { mutate: regularCancelMutation } = useChatCancel(false);
+  const { mutate: forceStopMutation } = useChatCancel(true);
+
+  const [deactivateOptimisticUI, setIsRetryLoading, setIsRetryCompleted] = useChatOptimisticStore(
+    useShallow((state) => [state.deactivateOptimisticUI, state.setIsRetryLoading, state.setIsRetryCompleted]),
+  );
+
+  // SSE 이벤트 소스 스토어
+  const [isStartSSE, setIsStartSSE, addEventSource, closeEventSource, getEventSource] = useSSEEventSourceStore(
+    useShallow((state) => [
+      state.isStartSSE,
+      state.setIsStartSSE,
+      state.addEventSource,
+      state.closeEventSource,
+      state.getEventSource,
+    ]),
+  );
 
   const cleanupConnection = useCallback(() => {
     if (chatRoomId) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chats.messages(chatRoomId) });
       closeEventSource(chatRoomId);
       setIsStartSSE(false);
       deactivateOptimisticUI();
+      setIsRetryLoading(false);
+      setIsRetryCompleted(true);
+
+      setSseData({ isReceiving: false, content: "", userMessageId: "" });
       eventSourceRef.current = null;
+      isConnectingRef.current = false;
+
+      console.log("SSE 연결 종료");
     }
-  }, [chatRoomId, closeEventSource, setIsStartSSE, deactivateOptimisticUI]);
+  }, [
+    chatRoomId,
+    queryClient,
+    closeEventSource,
+    setIsStartSSE,
+    deactivateOptimisticUI,
+    setIsRetryLoading,
+    setIsRetryCompleted,
+  ]);
+
+  const startSSEConnection = useCallback(() => {
+    // 이미 연결 중이거나 채팅방 ID가 없는 경우 무시
+    if (isConnectingRef.current || !chatRoomId) return;
+
+    isConnectingRef.current = true;
+
+    const existingEventSource = getEventSource(chatRoomId);
+    if (existingEventSource) closeEventSource(chatRoomId); // 기존 연결이 있으면 닫기
+
+    setIsStartSSE(true);
+
+    setSseData({ isReceiving: true, content: "", userMessageId: "" });
+  }, [chatRoomId, closeEventSource, getEventSource, setIsStartSSE]);
 
   useEffect(() => {
     // 채팅방 ID가 없거나 SSE 연결 시작 상태가 아닌 경우 연결하지 않음
     if (!chatRoomId || !isStartSSE) return;
 
-    // SSE 데이터 초기화
-    setSseData({ isReceiving: true, content: "", userMessageId: "" });
+    // 이미 EventSource가 있는지 확인
+    if (getEventSource(chatRoomId)) return;
 
     // SSE 연결
     const eventSource = new EventSource(`/api/v1/chat/stream/${chatRoomId}`);
     eventSourceRef.current = eventSource;
+    isConnectingRef.current = true;
 
+    // 스토어에 EventSource 추가
     addEventSource(chatRoomId, eventSource);
 
     // 연결 성공
     eventSource.addEventListener("connected", (event) => {
       console.log("SSE 연결 성공:", event.data);
+      isConnectingRef.current = false;
     });
 
     // 메시지
@@ -70,6 +117,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
           model: data.model,
           createdAt: data.created_at,
           userMessageId: data.user_message_id,
+          answerId: data.answer_id,
         };
 
         // 서버에서 오류 발생 시 재시도 메시지
@@ -89,7 +137,11 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
         if (data.done) {
           responseData.isReceiving = false;
           setSseData(responseData);
-          cleanupConnection();
+
+          // 연결 종료는 상태 업데이트 후 비동기적으로 처리하여 UI 깜빡임 방지
+          setTimeout(() => {
+            cleanupConnection();
+          }, 100);
         }
       } catch (error) {
         console.error("SSE 메시지 파싱 오류:", error);
@@ -114,18 +166,15 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
           model: errorData.model || "",
           createdAt: errorData.created_at || "",
           userMessageId: errorData.user_message_id || "",
+          answerId: errorData.answer_id || "",
         });
 
-        const errorType = errorData.error_type;
-        if (errorType === "NETWORK" || errorType === "TIMEOUT") {
-          regularCancelMutation({ roomId: chatRoomId });
-        } else if (errorType === "MODEL" || errorType === "CONTENT") {
-          forceStopMutation({ roomId: chatRoomId });
-        } else {
-          regularCancelMutation({ roomId: chatRoomId });
-        }
         console.error("SSE 오류:", errorData.message || "메시지를 받는 중 오류가 발생했습니다");
-        cleanupConnection();
+
+        // 오류 발생 시에도 UI 깜빡임 방지를 위해 약간 지연 후 연결 종료
+        setTimeout(() => {
+          cleanupConnection();
+        }, 100);
       } catch {
         // 기본 오류 처리
         setSseData({
@@ -137,11 +186,16 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
           model: "",
           createdAt: "",
           userMessageId: "",
+          answerId: "",
         });
 
         console.error("서버 연결 중 오류가 발생했습니다");
         regularCancelMutation({ roomId: chatRoomId });
-        cleanupConnection();
+
+        // 연결 종료
+        setTimeout(() => {
+          cleanupConnection();
+        }, 100);
       }
     });
 
@@ -156,6 +210,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
         model: "",
         createdAt: "",
         userMessageId: "",
+        answerId: "",
       });
 
       console.warn("연결 시간이 초과되었습니다");
@@ -169,6 +224,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
         isReceiving: false,
         content: "",
         userMessageId: "",
+        answerId: "",
       });
 
       console.info("장시간 활동이 없어 연결이 종료되었습니다");
@@ -184,9 +240,11 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     // 컴포넌트 언마운트 또는 의존성 변경 시 연결 종료
     return () => {
       if (eventSourceRef.current) {
-        console.log("컴포넌트 언마운트 시 SSE 연결 종료");
         closeEventSource(chatRoomId);
+        setIsRetryLoading(false);
         eventSourceRef.current = null;
+        isConnectingRef.current = false;
+        console.log("컴포넌트 언마운트 시 SSE 연결 종료");
       }
     };
   }, [
@@ -197,9 +255,10 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     addEventSource,
     closeEventSource,
     cleanupConnection,
+    getEventSource,
+    setIsRetryLoading,
   ]);
 
-  // 사용자가 직접 호출할 수 있는 중단 함수들
   const cancelChat = () => {
     if (chatRoomId) {
       console.log("사용자 요청에 의한 일반 중단");
@@ -220,5 +279,6 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     sseData,
     cancelChat, // 일반 중단 함수 (부분 응답 저장)
     forceStopChat, // 강제 중단 함수 (저장 안 함)
+    startSSEConnection, // SSE 연결 시작 함수 - 외부에서 재연결 시 사용 가능
   };
 };
