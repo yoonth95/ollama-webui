@@ -1,0 +1,70 @@
+import { BotChatError, BotChatLayout, BotChatHeader } from "@/features/chat/components";
+import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
+import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
+import { ChatMessageType } from "@/shared/types/chatMessageType";
+import { LoaderCircle } from "lucide-react";
+
+interface BotResponseRendererPropsType {
+  answerData?: ChatMessageType;
+  index?: number;
+  sseData: SSEChatDataType;
+  roomId: string;
+  type: "optimistic" | "regular";
+}
+
+const BotResponseRenderer = ({ answerData, index = 0, sseData, roomId, type }: BotResponseRendererPropsType) => {
+  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
+
+  // 오류 발생
+  if (sseData.error) {
+    return (
+      <article
+        key={answerData?.id || `bot-error-${index}`}
+        className="bot-message group flex w-full flex-col justify-start"
+      >
+        <BotChatHeader modelName={sseData.model} createdAt={sseData.createdAt} />
+        <BotChatError
+          roomId={roomId}
+          userMessageId={sseData.userMessageId}
+          answerId={sseData.answerId}
+          errorType={sseData.errorType}
+          errorMessage={sseData.errorMessage}
+        />
+      </article>
+    );
+  }
+
+  // 답변 로딩
+  if (isStartSSE && !sseData.content) {
+    return (
+      <div key={answerData?.id || `bot-loading-${index}`} className="py-2">
+        <LoaderCircle className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  // 답변 시작
+  if (sseData.content) {
+    return (
+      <BotChatLayout
+        key={answerData?.id || `bot-content-${index}`}
+        isRetry={sseData.isRetry}
+        content={sseData.content}
+        modelName={sseData.model || ""}
+        createdAt={sseData.createdAt || ""}
+        roomId={roomId}
+        userMessageId={sseData.userMessageId}
+        answerId={sseData.answerId}
+        type={type}
+      />
+    );
+  }
+
+  return (
+    <div key={answerData?.id || `bot-initial-loading-${index}`} className="py-2">
+      <LoaderCircle className="h-6 w-6 animate-spin" />
+    </div>
+  );
+};
+
+export default BotResponseRenderer;
