@@ -96,36 +96,30 @@ class ChatService:
       db = SessionLocal()
       new_session = True
     
-    room_id = assistant_update_message.room_id
-    content = assistant_update_message.content
-    model = assistant_update_message.model
-    user_message_id = assistant_update_message.user_message_id
-    answer_id = assistant_update_message.answer_id
-    
     try:
       # raise ValueError("일부러 발생시킨 테스트 에러")
-      result = ChatCrud.update_assistant_message(db, answer_id, content, commit=commit)
+      result = ChatCrud.update_assistant_message(db, assistant_update_message, commit=commit)
       
       # 메타데이터 저장 (모델명, 생성 시간)
       metadata = {
-        "model": model,
+        "model": assistant_update_message.model,
         "created_at": datetime.now().isoformat()
       }
-      pubsub_client.set(f"{METADATA_KEY_PREFIX}{room_id}", json.dumps(metadata), MESSAGE_EXPIRE_TIME)
+      pubsub_client.set(f"{METADATA_KEY_PREFIX}{assistant_update_message.room_id}", json.dumps(metadata), MESSAGE_EXPIRE_TIME)
       return result
     except Exception as e:
       logger.error(f"답변 재시도 오류: {str(e)}")
       if commit:
         db.rollback()
       # 오류 메시지 발행
-      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{assistant_update_message.room_id}", json.dumps({
         "error": True,
         "error_type": ERROR_TYPE_UNKNOWN,
         "message": f"답변 재시도 오류: {str(e)}",
-        "model": model,
+        "model": assistant_update_message.model,
         "created_at": datetime.now().isoformat(),
-        "user_message_id": user_message_id,
-        "assistant_message_id": answer_id
+        "user_message_id": assistant_update_message.user_message_id,
+        "assistant_message_id": assistant_update_message.answer_id
       }))
       return None
     finally:
@@ -427,15 +421,10 @@ class ChatService:
         }))
         
         # 중복 DB 저장 방지: 첫 오류 발생 시에만 DB에 저장
-        if error_counter == 1:
-          error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
-          if not pubsub_client.exists(error_counter_key):
-            pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
-            
-            # 오류 정보 DB에 저장
-            if answer_id == "":
-              await ChatService._save_error_to_db(room_id, ERROR_TYPE_CONTENT, "답변 도중 오류가 발생했습니다.", model, user_message_id)
-        
+        if answer_id == "":
+          await ChatService._save_error_to_db(room_id, ERROR_TYPE_CONTENT, "답변 도중 오류가 발생했습니다.", model, user_message_id)
+        else:
+          await ChatService._update_error_to_db(room_id, ERROR_TYPE_CONTENT, "답변 도중 오류가 발생했습니다.", model, user_message_id)
         continue
     
     return current_answer
@@ -617,15 +606,11 @@ class ChatService:
       })
       await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", error_message)
       
-      # 이미 오류가 저장되었는지 확인
-      error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
-      if not pubsub_client.exists(error_counter_key):
-        # 오류 카운터 설정 (이 세션에서 첫 오류)
-        pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
-        
-        # 오류 정보 DB에 저장
-        if answer_id == "":
-          await ChatService._save_error_to_db(room_id, error_type, message, model, user_message_id)
+      # 오류 정보 DB에 저장
+      if answer_id == "":
+        await ChatService._save_error_to_db(room_id, error_type, message, model, user_message_id)
+      else:
+        await ChatService._update_error_to_db(room_id, error_type, message, model, user_message_id)
       
       return False
 
@@ -664,15 +649,10 @@ class ChatService:
     if not user_message_id and metadata and "user_message_id" in metadata:
       user_message_id = metadata.get("user_message_id")
     
-    # 이미 오류가 저장되었는지 확인
-    error_counter_key = f"{ERROR_COUNTER_PREFIX}{room_id}"
-    if not pubsub_client.exists(error_counter_key):
-      # 오류 카운터 설정 (이 세션에서 첫 오류)
-      pubsub_client.set(error_counter_key, "1", MESSAGE_EXPIRE_TIME)
-      
-      # 오류 정보 DB에 저장 (답변 ID가 없는 경우)
-      if answer_id == "":
-        await ChatService._save_error_to_db(room_id, error_type, error_message, model, user_message_id)
+    if answer_id == "":
+      await ChatService._save_error_to_db(room_id, error_type, error_message, model, user_message_id)
+    else:
+      await ChatService._update_error_to_db(room_id, error_type, error_message, model, user_message_id)
 
   @staticmethod
   def _determine_error_type(error_str: str):
@@ -896,6 +876,29 @@ class ChatService:
       logger.info(f"Room {room_id}: 오류 정보 DB 저장 성공 (error_type: {error_type})")
     except Exception as e:
       logger.error(f"Room {room_id}: 오류 정보 저장 실패 - {str(e)}")
+    finally:
+      if 'db' in locals():
+        db.close()
+        
+  @staticmethod
+  async def _update_error_to_db(room_id: str, error_type: str, error_message: str, model: str, user_message_id: str = None):
+    """오류 정보를 데이터베이스에 업데이트"""
+    logger.info(f"Room {room_id}: 오류 정보 업데이트 시작 (error_type: {error_type})")
+    try:
+      db = SessionLocal()
+      error_assistant_message = ChatAssistantMessageType(
+        room_id=room_id,
+        content="",  # 빈 문자열로 설정
+        model=model,
+        user_message_id=user_message_id,
+        error_type=error_type,
+        error_message=error_message
+      )
+      
+      await ChatService.update_assistant_message(db, error_assistant_message, commit=True)
+      logger.info(f"Room {room_id}: 오류 정보 DB 업데이트 성공 (error_type: {error_type})")
+    except Exception as e:
+      logger.error(f"Room {room_id}: 오류 정보 업데이트 실패 - {str(e)}")
     finally:
       if 'db' in locals():
         db.close()

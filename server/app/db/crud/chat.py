@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy.orm import Session
 from app.db.models.chat import ChatMessage
-from app.schemas.chat import ChatUserMessageType, ChatAssistantMessageType
+from app.schemas.chat import ChatUserMessageType, ChatAssistantMessageType, ChatAssistantUpdateMessageType
 
 class ChatCrud:
   @staticmethod
@@ -103,19 +103,19 @@ class ChatCrud:
     ).order_by(ChatMessage.created_at.desc()).first()
     
   @staticmethod
-  def update_assistant_message(db: Session, message_id: str, content: str, commit: bool = True):
+  def update_assistant_message(db: Session, assistant_update_message: ChatAssistantUpdateMessageType, commit: bool = True):
     """어시스턴트 메시지 업데이트"""
     message = db.query(ChatMessage).filter(
-      ChatMessage.id == message_id,
+      ChatMessage.id == assistant_update_message.answer_id,
       ChatMessage.role == "assistant"
     ).first()
     
     if not message:
       return False
       
-    message.content = content
-    message.error_type = None
-    message.error_message = None
+    message.content = assistant_update_message.content
+    message.error_type = assistant_update_message.error_type
+    message.error_message = assistant_update_message.error_message
     
     if commit:
       db.commit()

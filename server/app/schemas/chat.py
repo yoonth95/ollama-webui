@@ -31,6 +31,8 @@ class ChatAssistantUpdateMessageType(BaseModel):
   model: str
   user_message_id: str
   answer_id: str
+  error_type: Optional[str] = None
+  error_message: Optional[str] = None
 
 class ChatHistoryResponseType(TimeModelMixin):
   """채팅 내역 응답 타입"""
