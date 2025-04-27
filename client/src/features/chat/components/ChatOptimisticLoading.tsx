@@ -1,6 +1,6 @@
 import { useShallow } from "zustand/shallow";
-import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { UserChatBox } from "@/features/chat/components";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { LoaderCircle } from "lucide-react";
 
 /**
@@ -8,8 +8,8 @@ import { LoaderCircle } from "lucide-react";
  * 메시지 전송 시 유저 메시지를 표시하고 봇 응답은 로딩으로 표시
  */
 const ChatOptimisticLoading = () => {
-  const [userChatData, isOptimistic, isCreateRoomLoading] = useChatOptimisticStore(
-    useShallow((state) => [state.userChatData, state.isOptimistic, state.isCreateRoomLoading]),
+  const [ChatDataList, isOptimistic, isCreateRoomLoading] = useChatOptimisticStore(
+    useShallow((state) => [state.ChatDataList, state.isOptimistic, state.isCreateRoomLoading]),
   );
 
   // Optimistic UI가 활성화되지 않은 경우 (초기 상태)
@@ -19,7 +19,11 @@ const ChatOptimisticLoading = () => {
 
   return (
     <>
-      {userChatData.content && <UserChatBox content={userChatData.content} images={userChatData.images ?? []} />}
+      {ChatDataList.map((chatData) =>
+        chatData.role === "user" ? (
+          <UserChatBox key={chatData.id} content={chatData.content} images={chatData.images ?? []} />
+        ) : null,
+      )}
 
       {isCreateRoomLoading && (
         <div className="py-2">

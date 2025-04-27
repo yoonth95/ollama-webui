@@ -15,13 +15,13 @@ import {
 const useCreateChatRoom = () => {
   const navigate = useNavigate();
   const clearImages = useEditorImageStore((state) => state.clearImages);
-  const [activateOptimisticUI, deactivateOptimisticUI, setUserChatData, clearUserChatData, setIsCreateRoomLoading] =
+  const [activateOptimisticUI, deactivateOptimisticUI, setChatDataList, clearChatDataList, setIsCreateRoomLoading] =
     useChatOptimisticStore(
       useShallow((state) => [
         state.activateOptimisticUI,
         state.deactivateOptimisticUI,
-        state.setUserChatData,
-        state.clearUserChatData,
+        state.setChatDataList,
+        state.clearChatDataList,
         state.setIsCreateRoomLoading,
       ]),
     );
@@ -40,21 +40,47 @@ const useCreateChatRoom = () => {
 
         let content = "";
         let images: ImageDataType[] = [];
+        let model = "";
 
         if ("content" in variable) {
           content = variable.content;
           images = variable.images || [];
+          model = variable.model || "";
         } else if (variable.data) {
           content = variable.data.content || "";
           images = variable.data.images || [];
+          model = variable.data.model || "";
         }
 
-        // UI 업데이트
         activateOptimisticUI();
-        setUserChatData({
-          content,
-          images,
-        });
+        setChatDataList([
+          {
+            id: `user-${Date.now()}`,
+            roomId: "",
+            role: "user",
+            model,
+            content,
+            images,
+            errorType: null,
+            errorMessage: null,
+            userMessageId: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          {
+            id: `assistant-${Date.now()}`,
+            roomId: "",
+            role: "assistant",
+            model,
+            content: "",
+            images: [],
+            errorType: null,
+            errorMessage: null,
+            userMessageId: null,
+            createdAt: "",
+            updatedAt: "",
+          },
+        ]);
       },
       onSuccess: (data) => {
         if (data.data?.id) {
@@ -68,7 +94,7 @@ const useCreateChatRoom = () => {
       },
       onError: (error) => {
         console.error("채팅방 생성 오류:", error);
-        clearUserChatData();
+        clearChatDataList();
         deactivateOptimisticUI();
       },
     },
