@@ -19,6 +19,7 @@ export interface BotChatLayoutPropsType {
   roomId: string;
   userMessageId: string;
   answerId?: string;
+  type?: "optimistic" | "regular";
 }
 const BotChatLayout = ({
   isRetry,
@@ -33,7 +34,7 @@ const BotChatLayout = ({
   answerId,
 }: BotChatLayoutPropsType) => {
   const { thinkContent, mainContent, isThinking } = useThinkContent(content);
-  const hasError = errorType && errorMessage;
+  const hasError = errorType !== undefined && errorType !== null;
 
   return (
     <article className="bot-message group flex w-full justify-start">
@@ -54,7 +55,7 @@ const BotChatLayout = ({
             errorMessage={errorMessage}
           />
         ) : (
-          <BotChatContent isRetry={isRetry} mainContent={mainContent} content={content} isError={Boolean(hasError)} />
+          <BotChatContent isRetry={isRetry} mainContent={mainContent} content={content} isError={false} />
         )}
 
         {/* 툴바 */}
