@@ -59,7 +59,14 @@ const BotChatLayout = ({
         )}
 
         {/* 툴바 */}
-        {!hasError && !isStartSSE && !isRetry && <BotChatToolbar content={mainContent || "응답 없음."} />}
+        {!hasError && !isStartSSE && !isRetry && (
+          <BotChatToolbar
+            content={mainContent || "응답 없음."}
+            answerId={answerId || ""}
+            userMessageId={userMessageId || ""}
+            roomId={roomId}
+          />
+        )}
       </div>
     </article>
   );
