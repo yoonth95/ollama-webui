@@ -1,11 +1,14 @@
 import { Button } from "@/shared/ui/button";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import useMessageRetry from "@/features/chat/queries/useMessageRetry";
 import { AlertTriangle } from "lucide-react";
 
 const BotChatEmpty = ({ roomId }: { roomId: string }) => {
   const { mutate: retryMessageMutation } = useMessageRetry(roomId);
+  const setRetryInfo = useChatOptimisticStore((state) => state.setRetryInfo);
 
   const handleRetryMessage = () => {
+    setRetryInfo(null, "empty");
     retryMessageMutation({
       roomId,
       userMessageId: "",

@@ -1,10 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
-import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
 import useMessageRetry from "@/features/chat/queries/useMessageRetry";
 import { SSEChatErrorType } from "@/features/chat/types/sseChatDataType";
-import { AlertTriangle, RefreshCw, MessageSquare, LoaderCircle } from "lucide-react";
+import { AlertTriangle, RefreshCw, MessageSquare } from "lucide-react";
 
 interface BotChatErrorPropsType {
   roomId: string;
@@ -15,11 +14,11 @@ interface BotChatErrorPropsType {
 }
 const BotChatError = ({ roomId, userMessageId, answerId, errorType, errorMessage }: BotChatErrorPropsType) => {
   const navigate = useNavigate();
-  const { mutate: retryMessageMutation, isPending } = useMessageRetry(roomId);
-  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
-  const isRetryLoading = useChatOptimisticStore((state) => state.isRetryLoading);
+  const { mutate: retryMessageMutation } = useMessageRetry(roomId);
+  const setRetryInfo = useChatOptimisticStore((state) => state.setRetryInfo);
 
   const handleRetryMessage = () => {
+    setRetryInfo(answerId || "", "error");
     retryMessageMutation({
       roomId,
       userMessageId: userMessageId || "",
@@ -27,15 +26,6 @@ const BotChatError = ({ roomId, userMessageId, answerId, errorType, errorMessage
       isErrorRetry: true,
     });
   };
-
-  const isLoading = isPending || (isStartSSE && isRetryLoading);
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-start py-4">
-        <LoaderCircle className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="dark:border-destructive [&>svg]:text-destructive relative w-full rounded-lg border border-red-800/50 bg-red-950/30 p-4 text-red-100 [&>svg]:absolute [&>svg]:top-4 [&>svg]:left-4 [&>svg+div]:translate-y-[-3px] [&>svg~*]:pl-7">
@@ -59,7 +49,6 @@ const BotChatError = ({ roomId, userMessageId, answerId, errorType, errorMessage
             size="sm"
             className="border-red-800/30 bg-red-950/50 text-red-200 hover:bg-red-900/50 hover:text-red-100"
             onClick={handleRetryMessage}
-            disabled={isPending}
           >
             <RefreshCw className="mr-1 h-4 w-4" />
             재시도
@@ -68,9 +57,7 @@ const BotChatError = ({ roomId, userMessageId, answerId, errorType, errorMessage
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              navigate("/chat");
-            }}
+            onClick={() => navigate("/")}
             className="border-red-800/30 bg-red-950/50 text-red-200 hover:bg-red-900/50 hover:text-red-100"
           >
             <MessageSquare className="mr-1 h-4 w-4" />새 채팅 시작

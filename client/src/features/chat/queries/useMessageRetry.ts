@@ -5,7 +5,7 @@ import { ChatRetryRequestSchema, ChatRetryRequestType } from "@/shared/types/cha
 
 const useMessageRetry = (roomId: string) => {
   const setIsStartSSE = useSSEEventSourceStore((state) => state.setIsStartSSE);
-  const setIsRetryLoading = useChatOptimisticStore((state) => state.setIsRetryLoading);
+  const clearRetryInfo = useChatOptimisticStore((state) => state.clearRetryInfo);
 
   return useCustomMutation<undefined, ChatRetryRequestType>({
     endpoint: `/chat/retry`,
@@ -13,12 +13,9 @@ const useMessageRetry = (roomId: string) => {
     requestSchema: ChatRetryRequestSchema,
     queryKeyToInvalidate: queryKeys.chats.messages(roomId),
     options: {
-      onSuccess: () => {
-        setIsRetryLoading(true);
-      },
       onError: () => {
         setIsStartSSE(false);
-        setIsRetryLoading(false);
+        clearRetryInfo();
       },
     },
   });
