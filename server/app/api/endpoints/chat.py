@@ -11,7 +11,7 @@ from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
 from app.utils.chat_manager import cancelled_chats
 from app.utils.memory_pubsub import memory_pubsub
-from app.schemas.chat import ChatUserMessageType, ChatRetryRequestType, ChatCancelRequestType, ChatForceStopRequestType
+from app.schemas.chat import ChatRetryRequestType, ChatCancelRequestType, ChatForceStopRequestType
 import logging
 
 router = APIRouter()
