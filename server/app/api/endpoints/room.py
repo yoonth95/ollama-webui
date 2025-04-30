@@ -8,7 +8,6 @@ from app.schemas.chat import ChatUserMessageType
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
 from app.db.database import get_db
-from app.core.config import settings
 from app.utils.memory_pubsub import memory_pubsub
 import asyncio
 import logging

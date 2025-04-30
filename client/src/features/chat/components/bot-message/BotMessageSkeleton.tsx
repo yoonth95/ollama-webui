@@ -1,4 +1,4 @@
-const BotChatSkeleton = () => {
+const BotMessageSkeleton = () => {
   return (
     <article className="bot-message flex w-full justify-start">
       <div className="flex max-w-[85%] animate-pulse items-start">
@@ -12,4 +12,4 @@ const BotChatSkeleton = () => {
   );
 };
 
-export default BotChatSkeleton;
+export default BotMessageSkeleton;

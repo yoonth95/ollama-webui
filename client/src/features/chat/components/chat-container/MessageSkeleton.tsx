@@ -1,6 +1,6 @@
 import { Skeleton } from "@/shared/ui/skeleton";
 
-const ChatMessageSkeleton = () => {
+const MessageSkeleton = () => {
   return (
     <div className="mb-8 flex items-center justify-center">
       <div className="flex w-full flex-col text-base md:w-[42rem] xl:w-[48rem]">
@@ -18,4 +18,4 @@ const ChatMessageSkeleton = () => {
   );
 };
 
-export default ChatMessageSkeleton;
+export default MessageSkeleton;

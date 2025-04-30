@@ -1,7 +1,22 @@
+import useMessageRetry from "@/features/chat/queries/useMessageRetry";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { Button } from "@/shared/ui/button";
 import { AlertTriangle } from "lucide-react";
 
-const BotChatEmpty = () => {
+const BotMessageEmpty = ({ roomId }: { roomId: string }) => {
+  const { mutate: retryMessageMutation } = useMessageRetry(roomId);
+  const setRetryInfo = useChatOptimisticStore((state) => state.setRetryInfo);
+
+  const handleRetryMessage = () => {
+    setRetryInfo(null, "empty");
+    retryMessageMutation({
+      roomId,
+      userMessageId: "",
+      answerId: "",
+      isErrorRetry: false,
+    });
+  };
+
   return (
     <div className="py-5">
       <div className="w-full">
@@ -14,7 +29,9 @@ const BotChatEmpty = () => {
             </div>
           </div>
           <div className="flex items-center justify-end gap-2">
-            <Button variant="outline">재시도</Button>
+            <Button variant="outline" onClick={handleRetryMessage}>
+              재시도
+            </Button>
           </div>
         </div>
       </div>
@@ -22,4 +39,4 @@ const BotChatEmpty = () => {
   );
 };
 
-export default BotChatEmpty;
+export default BotMessageEmpty;

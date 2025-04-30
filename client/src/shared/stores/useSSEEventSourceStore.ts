@@ -1,6 +1,11 @@
 import { create } from "zustand";
 
 interface SSEEventSourceState {
+  isStartSSE: boolean;
+
+  // SSE 연결 시작 상태 설정
+  setIsStartSSE: (isStartSSE: boolean) => void;
+
   // 채팅방 ID를 키로 사용하여 EventSource 객체 저장
   eventSources: Record<string, EventSource>;
 
@@ -21,7 +26,11 @@ interface SSEEventSourceState {
 }
 
 export const useSSEEventSourceStore = create<SSEEventSourceState>((set, get) => ({
+  isStartSSE: false,
   eventSources: {},
+
+  // SSE 연결 시작 상태 설정
+  setIsStartSSE: (isStartSSE) => set({ isStartSSE }),
 
   // EventSource 추가
   addEventSource: (roomId, eventSource) => {
@@ -67,5 +76,6 @@ export const useSSEEventSourceStore = create<SSEEventSourceState>((set, get) => 
     });
 
     set({ eventSources: {} });
+    get().setIsStartSSE(false);
   },
 }));

@@ -11,7 +11,7 @@ from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
 from app.utils.chat_manager import cancelled_chats
 from app.utils.memory_pubsub import memory_pubsub
-from app.schemas.chat import ChatUserMessageType, ChatRetryRequestType, ChatCancelRequestType, ChatForceStopRequestType
+from app.schemas.chat import ChatRetryRequestType, ChatCancelRequestType, ChatForceStopRequestType
 import logging
 
 router = APIRouter()
@@ -30,12 +30,9 @@ SSE_TIMEOUT = 60 * 30  # 30분
 async def get_chatting_history(room_id: str, db: Session = Depends(get_db)):
   """채팅방 조회"""
   logger.info(f"📩 클라이언트 채팅방 조회: {room_id}")
-  
   response = await ChatService.get_chatting_history(db, room_id)
-
   if not response:
     return JSONResponse(content=create_response(False, "존재하지 않는 채팅방입니다.", None), status_code=404)
-
   return JSONResponse(content=create_response(True, "채팅 내역 조회", response), status_code=200)
 
 @router.get("/chat/stream/{room_id}")
@@ -252,10 +249,8 @@ async def cancel_chat(request: ChatCancelRequestType):
   """채팅 응답 생성 중단"""
   room_id = request.room_id
   logger.info(f"📩 클라이언트 채팅 중단 요청: {room_id}")
-  
-  # 채팅 응답 생성 중단 서비스 호출
+
   await ChatService.cancel_chat(room_id)
-  
   return JSONResponse(content=create_response(True, "채팅 중단 완료", None), status_code=200)
 
 @router.post("/chat/force-stop")
@@ -264,8 +259,14 @@ async def force_stop_chat(request: ChatForceStopRequestType):
   """채팅 응답 강제 중단 (답변 저장하지 않음)"""
   room_id = request.room_id
   logger.info(f"📩 클라이언트 채팅 강제 중단 요청: {room_id}")
-  
-  # 채팅 응답 강제 중단 서비스 호출
+
   await ChatService.force_stop_chat(room_id)
-  
   return JSONResponse(content=create_response(True, "채팅 강제 중단 완료", None), status_code=200)
+
+@router.post("/chat/retry")
+@handle_exceptions
+async def retry_answer(request: ChatRetryRequestType, db: Session = Depends(get_db)):
+  """답변 재시도"""
+  logger.info(f"📩 클라이언트 답변 재시도: answer_id={request.answer_id}, user_message_id={request.user_message_id}")
+  state, message, status_code = await ChatService.retry_answer(db, request.room_id, request.user_message_id, request.answer_id, request.is_error_retry)
+  return JSONResponse(content=create_response(state, message, None), status_code=status_code)

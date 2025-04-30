@@ -1,11 +1,11 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/shared/ui/accordion";
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/shared/ui/accordion";
 
-interface BotThinkingBoxProps {
+interface BotMessageThinkingProps {
   content: string;
 }
 
-const BotThinkingBox = ({ content }: BotThinkingBoxProps) => {
+const BotMessageThinking = ({ content }: BotMessageThinkingProps) => {
   return (
     <Accordion type="single" collapsible className="mb-2 rounded-lg border px-4">
       <AccordionItem value="thinking" className="border-none">
@@ -22,4 +22,4 @@ const BotThinkingBox = ({ content }: BotThinkingBoxProps) => {
   );
 };
 
-export default BotThinkingBox;
+export default BotMessageThinking;
