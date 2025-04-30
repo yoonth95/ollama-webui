@@ -49,6 +49,8 @@ const BotSSERenderer = ({ answerData, index = 0, sseData, roomId, type }: BotSSE
       <BotMessageLayout
         key={answerData?.id || `bot-content-${index}`}
         isRetry={sseData.isRetry}
+        isStartSSE={true}
+        isReceiving={true}
         content={sseData.content}
         modelName={sseData.model || ""}
         createdAt={sseData.createdAt || ""}
