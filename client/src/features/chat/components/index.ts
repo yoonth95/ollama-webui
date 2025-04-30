@@ -17,6 +17,7 @@ import ChatOptimisticRenderer from "./ChatOptimisticRenderer";
 import ChatRegularRenderer from "./ChatRegularRenderer";
 import ChatMessageSkeleton from "./ChatMessageSkeleton";
 import ErrorChatPage from "./ErrorChatPage";
+import { default as BotMessageRenderer } from "./chat-bot-message/BotMessageRenderer";
 
 export {
   UserChatBox,
@@ -38,4 +39,5 @@ export {
   ChatRegularRenderer,
   ChatMessageSkeleton,
   ErrorChatPage,
+  BotMessageRenderer,
 };

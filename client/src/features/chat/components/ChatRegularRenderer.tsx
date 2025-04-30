@@ -1,10 +1,13 @@
-import { useEffect, useCallback, useMemo } from "react";
-import { useShallow } from "zustand/shallow";
-import { BotChatEmpty, BotChatLayout, BotResponseRenderer, UserChatBox } from "@/features/chat/components";
-import { useSSEChat } from "@/features/chat/hooks/useSSEChat";
-import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
-import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
+import { useCallback, useMemo } from "react";
+import {
+  BotChatEmpty,
+  BotChatLayout,
+  BotResponseRenderer,
+  UserChatBox,
+  BotMessageRenderer,
+} from "@/features/chat/components";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
+import useChatState from "@/features/chat/hooks/useChatState";
 
 interface ChatRegularRendererPropsType {
   roomId: string;
@@ -12,70 +15,51 @@ interface ChatRegularRendererPropsType {
   isLastBotMessage: boolean;
 }
 
+/**
+ * 일반 채팅 렌더링을 담당하는 컴포넌트
+ * 채팅 이력, 재시도 및 빈 챗 상태를 처리
+ */
 const ChatRegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: ChatRegularRendererPropsType) => {
-  const [isRetryLoading, isRetryCompleted, retryType, retriedAssistantId] = useChatOptimisticStore(
-    useShallow((state) => [state.isRetryLoading, state.isRetryCompleted, state.retryType, state.retriedAssistantId]),
-  );
-  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
-  const { sseData, startSSEConnection } = useSSEChat({ chatRoomId: roomId });
+  const {
+    sseData,
+    lastSseDataRef,
+    isRetryLoading,
+    isRetryCompleted,
+    retryType,
+    retriedAssistantId,
+    isStartSSE,
+    isSSEResponse,
+    isLastSseDataVisible,
+    isEmptyChat,
+  } = useChatState(roomId, historyChatData, isLastBotMessage);
 
-  useEffect(() => {
-    if (isRetryLoading && !isStartSSE) startSSEConnection();
-  }, [isRetryLoading, isStartSSE, startSSEConnection]);
-
-  const BotMessageList = useCallback(
+  // 메시지 렌더링 콜백
+  const renderMessage = useCallback(
     (chatData: ChatMessageType) => {
-      // 재시도 중인 메시지인 경우 (error 또는 regenerate)
-      if (
-        isRetryLoading &&
-        chatData.id === retriedAssistantId &&
-        (retryType === "error" || retryType === "regenerate")
-      ) {
-        return <BotResponseRenderer key={`retry-${chatData.id}`} sseData={sseData} roomId={roomId} type="regular" />;
+      if (chatData.role === "user") {
+        return <UserChatBox key={chatData.id} content={chatData.content} images={chatData.images ?? []} />;
       }
 
-      // 일반적인 봇 메시지 렌더링
       return (
-        <BotChatLayout
+        <BotMessageRenderer
           key={chatData.id}
-          isRetry={false}
-          isStartSSE={false}
-          content={chatData.content}
-          modelName={chatData.model}
-          createdAt={chatData.createdAt}
-          errorType={chatData.errorType || undefined}
-          errorMessage={chatData.errorMessage || ""}
+          chatData={chatData}
+          sseData={sseData}
+          lastSseDataRef={lastSseDataRef}
           roomId={roomId}
-          userMessageId={chatData.userMessageId || ""}
-          answerId={chatData.id}
-          type="regular"
+          isRetryLoading={isRetryLoading}
+          isRetryCompleted={isRetryCompleted}
+          isStartSSE={isStartSSE}
+          retriedAssistantId={retriedAssistantId}
+          retryType={retryType}
         />
       );
     },
-    [roomId, isRetryLoading, retriedAssistantId, retryType, sseData],
+    [roomId, isRetryLoading, isRetryCompleted, isStartSSE, retriedAssistantId, retryType, sseData, lastSseDataRef],
   );
 
-  const renderedHistoryMessages = useMemo(
-    () =>
-      historyChatData.map((chatData) =>
-        chatData.role === "user" ? (
-          <UserChatBox key={chatData.id} content={chatData.content} images={chatData.images ?? []} />
-        ) : (
-          BotMessageList(chatData)
-        ),
-      ),
-    [historyChatData, BotMessageList],
-  );
-
-  const isSSEResponse = useMemo(
-    () => isRetryLoading && !isRetryCompleted && sseData && retryType === "empty",
-    [isRetryLoading, isRetryCompleted, sseData, retryType],
-  );
-
-  const isEmptyChat = useMemo(
-    () => !isLastBotMessage && !isRetryLoading && !isRetryCompleted,
-    [isLastBotMessage, isRetryLoading, isRetryCompleted],
-  );
+  // 모든 기록 메시지 렌더링
+  const renderedHistoryMessages = useMemo(() => historyChatData.map(renderMessage), [historyChatData, renderMessage]);
 
   return (
     <>
@@ -83,6 +67,22 @@ const ChatRegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: Chat
 
       {/* empty 재시도 - 마지막 메시지가 빈 경우 실시간 텍스트 렌더링 */}
       {isSSEResponse && <BotResponseRenderer sseData={sseData} roomId={roomId} type="regular" />}
+
+      {/* empty 재시도 후 SSE 완료 & API 응답 대기 중일 때 마지막 SSE 데이터 유지 */}
+      {isLastSseDataVisible && (
+        <BotChatLayout
+          key="last-sse-empty"
+          isRetry={false}
+          isStartSSE={false}
+          content={lastSseDataRef.current.content}
+          modelName={lastSseDataRef.current.model || ""}
+          createdAt={lastSseDataRef.current.createdAt || ""}
+          roomId={roomId}
+          userMessageId={lastSseDataRef.current.userMessageId || ""}
+          answerId={lastSseDataRef.current.answerId || ""}
+          type="regular"
+        />
+      )}
 
       {/* 마지막 질문에 답변하지 못한 경우 */}
       {isEmptyChat && <BotChatEmpty roomId={roomId} />}
