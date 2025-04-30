@@ -1,10 +1,10 @@
-import { BotChatError, BotChatLayout, BotChatHeader } from "@/features/chat/components";
+import { BotMessageError, BotMessageLayout, BotMessageHeader } from "@/features/chat/components";
 import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
 import { LoaderCircle } from "lucide-react";
 
-interface BotResponseRendererPropsType {
+interface BotSSERendererPropsType {
   answerData?: ChatMessageType;
   index?: number;
   sseData: SSEChatDataType;
@@ -12,7 +12,7 @@ interface BotResponseRendererPropsType {
   type: "optimistic" | "regular";
 }
 
-const BotResponseRenderer = ({ answerData, index = 0, sseData, roomId, type }: BotResponseRendererPropsType) => {
+const BotSSERenderer = ({ answerData, index = 0, sseData, roomId, type }: BotSSERendererPropsType) => {
   const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
 
   // 오류 발생
@@ -22,8 +22,8 @@ const BotResponseRenderer = ({ answerData, index = 0, sseData, roomId, type }: B
         key={answerData?.id || `bot-error-${index}`}
         className="bot-message group flex w-full flex-col justify-start"
       >
-        <BotChatHeader modelName={sseData.model} createdAt={sseData.createdAt} />
-        <BotChatError
+        <BotMessageHeader modelName={sseData.model} createdAt={sseData.createdAt} />
+        <BotMessageError
           roomId={roomId}
           userMessageId={sseData.userMessageId}
           answerId={sseData.answerId}
@@ -46,7 +46,7 @@ const BotResponseRenderer = ({ answerData, index = 0, sseData, roomId, type }: B
   // 답변 시작
   if (sseData.content) {
     return (
-      <BotChatLayout
+      <BotMessageLayout
         key={answerData?.id || `bot-content-${index}`}
         isRetry={sseData.isRetry}
         content={sseData.content}
@@ -67,4 +67,4 @@ const BotResponseRenderer = ({ answerData, index = 0, sseData, roomId, type }: B
   );
 };
 
-export default BotResponseRenderer;
+export default BotSSERenderer;

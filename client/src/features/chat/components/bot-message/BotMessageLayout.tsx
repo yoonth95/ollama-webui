@@ -1,14 +1,14 @@
 import {
-  BotThinkingBox,
-  BotChatToolbar,
-  BotChatError,
-  BotChatHeader,
-  BotChatContent,
+  BotMessageThinking,
+  BotMessageToolbar,
+  BotMessageError,
+  BotMessageHeader,
+  BotMessageContent,
 } from "@/features/chat/components";
 import useThinkContent from "@/features/chat/hooks/useThinkContent";
 import { SSEChatErrorType } from "@/features/chat/types/sseChatDataType";
 
-export interface BotChatLayoutPropsType {
+export interface BotMessageLayoutPropsType {
   isRetry?: boolean;
   isStartSSE?: boolean;
   content: string;
@@ -21,7 +21,7 @@ export interface BotChatLayoutPropsType {
   answerId?: string;
   type?: "optimistic" | "regular";
 }
-const BotChatLayout = ({
+const BotMessageLayout = ({
   isRetry,
   isStartSSE,
   content,
@@ -32,7 +32,7 @@ const BotChatLayout = ({
   roomId,
   userMessageId,
   answerId,
-}: BotChatLayoutPropsType) => {
+}: BotMessageLayoutPropsType) => {
   const { thinkContent, mainContent, isThinking } = useThinkContent(content);
   const hasError = errorType !== undefined && errorType !== null;
 
@@ -40,14 +40,14 @@ const BotChatLayout = ({
     <article className="bot-message group flex w-full justify-start">
       <div className="w-full max-w-full">
         {/* 모델 이름과 생성 시간 */}
-        <BotChatHeader modelName={modelName} createdAt={createdAt} />
+        <BotMessageHeader modelName={modelName} createdAt={createdAt} />
 
         {/* 추론 과정 표시 */}
-        {isThinking && thinkContent && <BotThinkingBox content={thinkContent} />}
+        {isThinking && thinkContent && <BotMessageThinking content={thinkContent} />}
 
         {/* 본문 내용 */}
         {hasError ? (
-          <BotChatError
+          <BotMessageError
             roomId={roomId}
             userMessageId={userMessageId}
             answerId={answerId}
@@ -55,12 +55,12 @@ const BotChatLayout = ({
             errorMessage={errorMessage}
           />
         ) : (
-          <BotChatContent isRetry={isRetry} mainContent={mainContent} content={content} isError={false} />
+          <BotMessageContent isRetry={isRetry} mainContent={mainContent} content={content} isError={false} />
         )}
 
         {/* 툴바 */}
         {!hasError && !isStartSSE && !isRetry && (
-          <BotChatToolbar
+          <BotMessageToolbar
             content={mainContent || "응답 없음."}
             answerId={answerId || ""}
             userMessageId={userMessageId || ""}
@@ -72,4 +72,4 @@ const BotChatLayout = ({
   );
 };
 
-export default BotChatLayout;
+export default BotMessageLayout;

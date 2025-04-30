@@ -1,7 +1,7 @@
 import formatCreatedDate from "@/features/chat/utils/formatCreatedDate";
-import { BotChatLayoutPropsType } from "@/features/chat/components/BotChatLayout";
+import { BotMessageLayoutPropsType } from "@/features/chat/components/bot-message/BotMessageLayout";
 
-const BotChatHeader = ({ modelName, createdAt }: Pick<BotChatLayoutPropsType, "modelName" | "createdAt">) => {
+const BotMessageHeader = ({ modelName, createdAt }: Pick<BotMessageLayoutPropsType, "modelName" | "createdAt">) => {
   return (
     <div className="text-accent-foreground-70 mb-2 flex items-center gap-3">
       {modelName && <span className="font-medium">{modelName}</span>}
@@ -14,4 +14,4 @@ const BotChatHeader = ({ modelName, createdAt }: Pick<BotChatLayoutPropsType, "m
   );
 };
 
-export default BotChatHeader;
+export default BotMessageHeader;

@@ -1,15 +1,15 @@
 import { useCallback, useMemo } from "react";
 import {
-  BotChatEmpty,
-  BotChatLayout,
-  BotResponseRenderer,
-  UserChatBox,
+  BotMessageEmpty,
+  BotMessageLayout,
+  BotSSERenderer,
+  UserMessageBox,
   BotMessageRenderer,
 } from "@/features/chat/components";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
 import useChatState from "@/features/chat/hooks/useChatState";
 
-interface ChatRegularRendererPropsType {
+interface RegularRendererPropsType {
   roomId: string;
   historyChatData: ChatMessageType[];
   isLastBotMessage: boolean;
@@ -19,7 +19,7 @@ interface ChatRegularRendererPropsType {
  * 일반 채팅 렌더링을 담당하는 컴포넌트
  * 채팅 이력, 재시도 및 빈 챗 상태를 처리
  */
-const ChatRegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: ChatRegularRendererPropsType) => {
+const RegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: RegularRendererPropsType) => {
   const {
     sseData,
     lastSseDataRef,
@@ -37,7 +37,7 @@ const ChatRegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: Chat
   const renderMessage = useCallback(
     (chatData: ChatMessageType) => {
       if (chatData.role === "user") {
-        return <UserChatBox key={chatData.id} content={chatData.content} images={chatData.images ?? []} />;
+        return <UserMessageBox key={chatData.id} content={chatData.content} images={chatData.images ?? []} />;
       }
 
       return (
@@ -66,11 +66,11 @@ const ChatRegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: Chat
       {renderedHistoryMessages}
 
       {/* empty 재시도 - 마지막 메시지가 빈 경우 실시간 텍스트 렌더링 */}
-      {isSSEResponse && <BotResponseRenderer sseData={sseData} roomId={roomId} type="regular" />}
+      {isSSEResponse && <BotSSERenderer sseData={sseData} roomId={roomId} type="regular" />}
 
       {/* empty 재시도 후 SSE 완료 & API 응답 대기 중일 때 마지막 SSE 데이터 유지 */}
       {isLastSseDataVisible && (
-        <BotChatLayout
+        <BotMessageLayout
           key="last-sse-empty"
           isRetry={false}
           isStartSSE={false}
@@ -85,9 +85,9 @@ const ChatRegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: Chat
       )}
 
       {/* 마지막 질문에 답변하지 못한 경우 */}
-      {isEmptyChat && <BotChatEmpty roomId={roomId} />}
+      {isEmptyChat && <BotMessageEmpty roomId={roomId} />}
     </>
   );
 };
 
-export default ChatRegularRenderer;
+export default RegularRenderer;

@@ -1,6 +1,6 @@
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
 
-const UserChatContent = ({ content }: { content: string }) => {
+const UserMessageContent = ({ content }: { content: string }) => {
   if (!content) return null;
 
   return (
@@ -12,4 +12,4 @@ const UserChatContent = ({ content }: { content: string }) => {
   );
 };
 
-export default UserChatContent;
+export default UserMessageContent;

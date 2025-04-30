@@ -1,7 +1,7 @@
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
 import { LoaderCircle } from "lucide-react";
 
-const BotChatContent = ({
+const BotMessageContent = ({
   isRetry,
   mainContent,
   content,
@@ -37,4 +37,4 @@ const BotChatContent = ({
   return null;
 };
 
-export default BotChatContent;
+export default BotMessageContent;

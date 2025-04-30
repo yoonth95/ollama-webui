@@ -1,9 +1,9 @@
-import { Button } from "@/shared/ui/button";
-import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import useMessageRetry from "@/features/chat/queries/useMessageRetry";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
+import { Button } from "@/shared/ui/button";
 import { AlertTriangle } from "lucide-react";
 
-const BotChatEmpty = ({ roomId }: { roomId: string }) => {
+const BotMessageEmpty = ({ roomId }: { roomId: string }) => {
   const { mutate: retryMessageMutation } = useMessageRetry(roomId);
   const setRetryInfo = useChatOptimisticStore((state) => state.setRetryInfo);
 
@@ -39,4 +39,4 @@ const BotChatEmpty = ({ roomId }: { roomId: string }) => {
   );
 };
 
-export default BotChatEmpty;
+export default BotMessageEmpty;

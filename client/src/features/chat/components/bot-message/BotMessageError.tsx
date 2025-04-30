@@ -5,14 +5,14 @@ import useMessageRetry from "@/features/chat/queries/useMessageRetry";
 import { SSEChatErrorType } from "@/features/chat/types/sseChatDataType";
 import { AlertTriangle, RefreshCw, MessageSquare } from "lucide-react";
 
-interface BotChatErrorPropsType {
+interface BotMessageErrorPropsType {
   roomId: string;
   userMessageId: string;
   answerId?: string;
   errorType?: SSEChatErrorType;
   errorMessage?: string;
 }
-const BotChatError = ({ roomId, userMessageId, answerId, errorType, errorMessage }: BotChatErrorPropsType) => {
+const BotMessageError = ({ roomId, userMessageId, answerId, errorType, errorMessage }: BotMessageErrorPropsType) => {
   const navigate = useNavigate();
   const { mutate: retryMessageMutation } = useMessageRetry(roomId);
   const setRetryInfo = useChatOptimisticStore((state) => state.setRetryInfo);
@@ -68,4 +68,4 @@ const BotChatError = ({ roomId, userMessageId, answerId, errorType, errorMessage
   );
 };
 
-export default BotChatError;
+export default BotMessageError;

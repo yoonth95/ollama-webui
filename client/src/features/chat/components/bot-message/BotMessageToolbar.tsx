@@ -1,17 +1,17 @@
 import { useCopyToClipboard } from "react-use";
+import useMessageRetry from "@/features/chat/queries/useMessageRetry";
 import { Button } from "@/shared/ui/button";
 import TooltipContainer from "@/shared/components/TooltipContainer";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
-import useMessageRetry from "@/features/chat/queries/useMessageRetry";
 import { Copy, RefreshCw } from "lucide-react";
 
-interface BotChatToolbarPropsType {
+interface BotMessageToolbarPropsType {
   content: string;
   answerId: string;
   userMessageId: string;
   roomId: string;
 }
-const BotChatToolbar = ({ content, answerId, userMessageId, roomId }: BotChatToolbarPropsType) => {
+const BotMessageToolbar = ({ content, answerId, userMessageId, roomId }: BotMessageToolbarPropsType) => {
   const [, copy] = useCopyToClipboard();
   const { mutate: retryMessageMutation } = useMessageRetry(roomId);
   const setRetryInfo = useChatOptimisticStore((state) => state.setRetryInfo);
@@ -43,4 +43,4 @@ const BotChatToolbar = ({ content, answerId, userMessageId, roomId }: BotChatToo
   );
 };
 
-export default BotChatToolbar;
+export default BotMessageToolbar;
