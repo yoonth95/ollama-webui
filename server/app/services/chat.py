@@ -728,8 +728,8 @@ class ChatService:
       # 취소 플래그만 설정
       cancelled_chats[room_id] = True
       
-      # 5초 후 취소 상태 자동 정리
-      asyncio.create_task(ChatService._clear_cancel_and_force_stop_state(room_id, 5))
+      # 1초 후 취소 상태 자동 정리
+      asyncio.create_task(ChatService._clear_cancel_and_force_stop_state(room_id, 1))
       
       return False
     
@@ -807,8 +807,8 @@ class ChatService:
     # 인메모리 데이터 정리 - 부분 답변 저장 후 삭제
     pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
     
-    # 5초 후 취소 상태 자동 정리 (새로운 요청 허용을 위함)
-    asyncio.create_task(ChatService._clear_cancel_and_force_stop_state(room_id, 5))
+    # 1초 후 취소 상태 자동 정리 (새로운 요청 허용을 위함)
+    asyncio.create_task(ChatService._clear_cancel_and_force_stop_state(room_id, 1))
     
     return is_active
     
@@ -835,8 +835,8 @@ class ChatService:
       "partial_saved": False
     }))
     
-    # 5초 후 취소 상태 자동 정리
-    asyncio.create_task(ChatService._clear_cancel_and_force_stop_state(room_id, 5))
+    # 1초 후 취소 상태 자동 정리
+    asyncio.create_task(ChatService._clear_cancel_and_force_stop_state(room_id, 1))
     
     return is_active
       
