@@ -54,7 +54,8 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
       setIsRetryLoading(false);
       setIsRetryCompleted(true);
 
-      setSseData({ isReceiving: false, content: "", userMessageId: "" });
+      // 스트리밍 데이터는 초기화하지 않고 isReceiving 상태만 변경 (UI 깜박임 방지)
+      setSseData((prev) => ({ ...prev, isReceiving: false }));
       eventSourceRef.current = null;
       isConnectingRef.current = false;
 
@@ -81,6 +82,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
 
     setIsStartSSE(true);
 
+    // 새 스트림 시작 시 초기화
     setSseData({ isReceiving: true, content: "", userMessageId: "" });
   }, [chatRoomId, closeEventSource, getEventSource, setIsStartSSE]);
 
