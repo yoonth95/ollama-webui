@@ -3,13 +3,14 @@ import { ChatRoomInfiniteSchema, ChatRoomInfiniteType } from "@/shared/types/cha
 import { DisplayType } from "@/shared/types/apiType";
 
 const useGetChatRooms = (type: DisplayType) => {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomInfiniteQuery<ChatRoomInfiniteType>({
-    queryKey: queryKeys.rooms.list(),
-    endpoint: "/room/get-rooms",
-    schema: ChatRoomInfiniteSchema,
-    errorOptions: { type },
-    options: { refetchOnWindowFocus: true },
-  });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } =
+    useCustomInfiniteQuery<ChatRoomInfiniteType>({
+      queryKey: queryKeys.rooms.list(),
+      endpoint: "/room/get-rooms",
+      schema: ChatRoomInfiniteSchema,
+      errorOptions: { type },
+      options: { refetchOnWindowFocus: true },
+    });
 
   const flatData = data?.pages.flatMap((page) => page.data?.items || []) || [];
 
@@ -18,6 +19,9 @@ const useGetChatRooms = (type: DisplayType) => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
   };
 };
 
