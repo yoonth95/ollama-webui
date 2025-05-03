@@ -1,7 +1,25 @@
 import json
+import aiohttp
 from sqlalchemy.orm import Session
-from app.schemas.room import RoomResponse, RoomTitle, RoomListResponse
+from app.db.database import SessionLocal
 from app.db.crud.room import RoomCrud
+from app.utils.memory_pubsub import memory_pubsub
+from app.core.config import settings
+from app.schemas.room import RoomResponse, RoomTitle, RoomListResponse
+from datetime import datetime
+
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 인메모리 PubSub 클라이언트
+pubsub_client = memory_pubsub
+
+# 상수 정의
+ROOM_TITLE_KEY_PREFIX = "room_title:"
+ROOM_CHANNEL_PREFIX = "room:"
+MESSAGE_EXPIRE_TIME = 60 * 60 * 24  # 24시간
 
 class RoomService:
   @staticmethod
@@ -37,3 +55,97 @@ class RoomService:
   async def update_room_title_service(db: Session, room_id: str, new_title: str) -> bool:
     """채팅방 제목 수정"""
     return RoomCrud.update_room_title(db, room_id, new_title)
+
+  @staticmethod
+  async def generate_and_update_title(room_id: str, user_message: str, model: str):
+    """채팅방 제목 생성 및 업데이트"""
+    try:
+      # 타이틀 생성
+      title = await RoomService._generate_title_ollama(user_message, model)
+      
+      # DB 업데이트
+      db = SessionLocal()
+      try:
+        success = RoomCrud.update_room_title(db, room_id, title)
+        if success:
+          # 타이틀 정보를 인메모리에 저장
+          title_data = {
+            "room_id": room_id,
+            "title": title,
+            "updated_at": datetime.now().isoformat()
+          }
+          pubsub_client.set(f"{ROOM_TITLE_KEY_PREFIX}{room_id}", json.dumps(title_data), MESSAGE_EXPIRE_TIME)
+          
+          # 타이틀 변경 이벤트를 PubSub에 발행
+          await pubsub_client.publish(
+            f"{ROOM_CHANNEL_PREFIX}{room_id}", 
+            json.dumps({
+              "event": "title_updated",
+              "data": {
+                "room_id": room_id,
+                "title": title
+              }
+            })
+          )
+          logger.info(f"{room_id} 채팅방 타이틀 업데이트 성공: {title}")
+        else:
+          logger.warning(f"{room_id} 채팅방 타이틀 업데이트 실패")
+      finally:
+        db.close()
+    except Exception as e:
+      logger.error(f"{room_id} 채팅방 타이틀 생성 중 오류: {str(e)}")
+      
+  @staticmethod
+  async def _generate_title_ollama(user_message: str, model: str) -> str:
+    """채팅방 타이틀 생성"""
+    try:
+      prompt = """### Task:
+        Generate a concise, 3-5 word title with an emoji summarizing the chat history.
+
+        ### Guidelines:
+        - The title should clearly represent the main theme or subject of the conversation.
+        - Use emojis to enhance the topic's meaning, but avoid quotation marks or special formatting.
+        - Write the title in the primary language used in the conversation; default to English if the language is unclear.
+        - Prioritize clarity and accuracy over excessive creativity.
+
+        ### Output:
+        JSON format: { "title": "your concise title here" }
+
+        ### Examples:
+        - { "title": "📉 Stock Market Trends" }
+        - { "title": "🍪 Perfect Chocolate Chip Recipe" }
+        - { "title": "Evolution of Music Streaming" }
+        - { "title": "Remote Work Productivity Tips" }
+        - { "title": "Artificial Intelligence in Healthcare" }
+        - { "title": "🎮 Video Game Development Insights" }
+
+        ### Chat History:
+      """ + user_message
+
+      ollama_request = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False
+      }
+
+      async with aiohttp.ClientSession() as session:
+        url = f"{settings.OLLAMA_API_BASE_URL}/api/generate"
+        async with session.post(url, json=ollama_request) as response:
+          if response.status == 200:
+            data = await response.json()
+            raw_response = data.get("response", "").strip()
+
+            try:
+              title_json = json.loads(raw_response)
+              title = title_json.get("title", "").strip()
+            except json.JSONDecodeError:
+              logger.warning(f"채팅방 타이틀 생성 실패 - 파싱 실패: {raw_response}")
+              title = "새 채팅"
+
+            return title
+          else:
+            logger.error(f"채팅방 타이틀 생성 실패 - 응답 실패: {response.status}")
+            return "새 채팅"
+    except Exception as e:
+      logger.error(f"채팅방 타이틀 생성 실패 - 오류: {str(e)}")
+      return "새 채팅"
