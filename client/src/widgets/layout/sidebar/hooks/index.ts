@@ -1,3 +1,4 @@
 import useGroupedChatRooms from "./useGroupedChatRooms";
+import useChatRoomInfiniteScroll from "./useChatRoomInfiniteScroll";
 
-export { useGroupedChatRooms };
+export { useGroupedChatRooms, useChatRoomInfiniteScroll };
