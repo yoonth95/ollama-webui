@@ -88,12 +88,7 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
 async def get_rooms(page: int = 1, limit: int = 20, db: Session = Depends(get_db)):
   """채팅방 전체 조회"""
   logger.info(f"📩 클라이언트 채팅방 리스트 조회")
-  
   response = await RoomService.get_rooms_service(db, page, limit)
-
-  # 테스트
-  if random.random() < 0.3:
-    return JSONResponse(content=create_response(False, "채팅방 전체 조회", None), status_code=500)
 
   return JSONResponse(content=create_response(True, "채팅방 전체 조회", response), status_code=200)
 
