@@ -1,20 +1,23 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { ChatRoomItemMenu } from "@/widgets/layout/sidebar/components";
 import { Button } from "@/shared/ui/button";
 import { DropdownMenu, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
-import { ChatRoomItemMenu } from "@/widgets/layout/sidebar/components";
+import useChatRoomStore from "@/shared/stores/useChatRoomStore";
+import { ChatRoomType } from "@/shared/types/chatRoomType";
 import { cn } from "@/shared/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 
 interface ChatRoomItemPropsType {
-  chat: { id: string; title: string };
+  chat: Pick<ChatRoomType, "id" | "title">;
 }
 const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
   const { pathname } = useLocation();
   const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
   const [openedRoom, setOpenedRoom] = useState<string | null>(null);
-  const [roomTitle, setRoomTitle] = useState(chat.title);
+  const chatRooms = useChatRoomStore((state) => state.chatRooms);
 
+  const currentChatRoom = chatRooms.find((room) => room.id === chat.id) || chat;
   const isEnterRoom = chat.id && pathname.includes(chat.id);
   const isActive = openedRoom === chat.id || (hoveredRoom === chat.id && !openedRoom) || isEnterRoom;
 
@@ -28,8 +31,8 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
         "dark:hover:bg-accent",
       )}
     >
-      <Link to={"/chat/" + chat.id} className={cn(`block flex-1 cursor-pointer truncate rounded-md p-2 text-sm`)}>
-        {roomTitle}
+      <Link to={"/chat/" + chat.id} className={cn(`block w-full flex-1 cursor-pointer rounded-md p-2 text-sm`)}>
+        <span className="block w-[85%] truncate">{currentChatRoom.title}</span>
       </Link>
 
       <DropdownMenu
@@ -56,12 +59,7 @@ const ChatRoomItem = ({ chat }: ChatRoomItemPropsType) => {
           </Button>
         </DropdownMenuTrigger>
 
-        <ChatRoomItemMenu
-          roomId={chat.id}
-          roomTitle={roomTitle}
-          setRoomTitle={setRoomTitle}
-          setHoveredRoom={setHoveredRoom}
-        />
+        <ChatRoomItemMenu roomId={chat.id} roomTitle={currentChatRoom.title} setHoveredRoom={setHoveredRoom} />
       </DropdownMenu>
     </li>
   );

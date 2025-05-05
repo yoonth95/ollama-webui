@@ -1,22 +1,27 @@
 import { Dispatch, SetStateAction, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { DropdownMenuItem, DropdownMenuContent } from "@/shared/ui/dropdown-menu";
-import { Separator } from "@/shared/ui/separator";
+import { useShallow } from "zustand/shallow";
 import { useDeleteChatRoom, useUpdateChatRoomTitle } from "@/widgets/layout/sidebar/queries";
+import { Separator } from "@/shared/ui/separator";
+import { DropdownMenuItem, DropdownMenuContent } from "@/shared/ui/dropdown-menu";
 import { ConfirmDialog, EditDialog } from "@/shared/components";
+import useChatRoomStore from "@/shared/stores/useChatRoomStore";
 import { Pencil, Trash2 } from "lucide-react";
 
 interface ChatRoomItemMenuPropsType {
   roomId: string;
   roomTitle: string;
-  setRoomTitle: Dispatch<SetStateAction<string>>;
   setHoveredRoom: Dispatch<SetStateAction<string | null>>;
 }
-const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: ChatRoomItemMenuPropsType) => {
+const ChatRoomItemMenu = ({ roomId, roomTitle, setHoveredRoom }: ChatRoomItemMenuPropsType) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+
+  const [updateChatRoomTitle, deleteChatRoom] = useChatRoomStore(
+    useShallow((state) => [state.updateChatRoomTitle, state.deleteChatRoom]),
+  );
 
   const updateChatRoomTitleMutation = useUpdateChatRoomTitle();
   const deleteChatRoomMutation = useDeleteChatRoom();
@@ -30,6 +35,7 @@ const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: C
       { params: { roomId } },
       {
         onSuccess: () => {
+          deleteChatRoom(roomId);
           if (isNowChatRoom) navigate("/");
         },
       },
@@ -38,23 +44,27 @@ const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: C
 
   // 채팅방 이름 변경
   const handleRename = (newTitle: string) => {
-    const oldTitle = roomTitle;
-    setRoomTitle(newTitle);
-
-    updateChatRoomTitleMutation.mutate({ roomId, newTitle }, { onError: () => setRoomTitle(oldTitle) });
+    updateChatRoomTitleMutation.mutate(
+      { roomId, newTitle },
+      {
+        onSuccess: () => {
+          updateChatRoomTitle(roomId, newTitle);
+        },
+      },
+    );
     setHoveredRoom(null);
   };
 
   return (
     <>
       <DropdownMenuContent
-        className="mt-[-5px] min-w-[8rem] space-y-2 border border-border bg-background px-2 py-2"
+        className="border-border bg-background mt-[-5px] min-w-[8rem] space-y-2 border px-2 py-2"
         align="start"
         sideOffset={-5}
         alignOffset={10}
       >
         <DropdownMenuItem
-          className="flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm dark:hover:bg-accent"
+          className="dark:hover:bg-accent flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm"
           onClick={() => setShowEditDialog(true)}
         >
           <Pencil />
@@ -62,7 +72,7 @@ const ChatRoomItemMenu = ({ roomId, roomTitle, setRoomTitle, setHoveredRoom }: C
         </DropdownMenuItem>
         <Separator />
         <DropdownMenuItem
-          className="flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm text-red-400 hover:text-red-400 dark:hover:bg-accent"
+          className="dark:hover:bg-accent flex cursor-pointer items-center gap-3 rounded-md p-2 text-sm text-red-400 hover:text-red-400"
           onClick={() => setShowConfirmDialog(true)}
         >
           <Trash2 />
