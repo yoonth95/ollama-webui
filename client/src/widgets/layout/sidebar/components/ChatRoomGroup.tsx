@@ -1,20 +1,27 @@
 import { ChatRoomItem } from "@/widgets/layout/sidebar/components";
-import { ChatItemType, GroupType } from "@/widgets/layout/sidebar/types/GroupRoomType";
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from "@/shared/ui/sidebar";
 import { useGroupedChatRooms } from "@/widgets/layout/sidebar/hooks";
 import { ChatRoomType } from "@/shared/types/chatRoomType";
 
-const ChatRoomGroup = ({ chatRooms }: { chatRooms: ChatRoomType[] }) => {
-  const groupedChats = useGroupedChatRooms(chatRooms);
+type GroupRoomType = {
+  category: string;
+  items: ChatRoomType[];
+};
+
+interface ChatRoomGroupPropsType {
+  chatRooms: ChatRoomType[];
+}
+const ChatRoomGroup = ({ chatRooms }: ChatRoomGroupPropsType) => {
+  const groupedRooms = useGroupedChatRooms(chatRooms);
 
   return (
     <>
-      {groupedChats.map((group: GroupType) => (
+      {groupedRooms.map((group: GroupRoomType) => (
         <SidebarGroup key={group.category} className="group-data-[collapsible=icon]:hidden">
           <SidebarGroupLabel>{group.category}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {group.items.map((item: ChatItemType) => (
+              {group.items.map((item) => (
                 <ChatRoomItem key={item.id} chat={item} />
               ))}
             </SidebarMenu>
