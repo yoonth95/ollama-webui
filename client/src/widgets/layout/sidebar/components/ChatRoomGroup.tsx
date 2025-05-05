@@ -22,7 +22,7 @@ const ChatRoomGroup = ({ chatRooms }: ChatRoomGroupPropsType) => {
           <SidebarGroupContent>
             <SidebarMenu>
               {group.items.map((item) => (
-                <ChatRoomItem key={item.id} chat={item} />
+                <ChatRoomItem key={item.id} room={item} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
