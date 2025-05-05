@@ -1,12 +1,8 @@
-import { useGetChatRooms } from "@/widgets/layout/sidebar/queries";
 import { Button } from "@/shared/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/ui/alert";
-import { DisplayType } from "@/shared/types/apiType";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
-const SidebarError = () => {
-  const { refetch } = useGetChatRooms(DisplayType.Toast);
-
+const SidebarError = ({ refetch }: { refetch: () => void }) => {
   return (
     <div className="flex h-full flex-col items-center justify-start p-4">
       <Alert variant="destructive" className="mb-4 max-w-md">
