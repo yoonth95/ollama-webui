@@ -2,7 +2,7 @@ import { Skeleton } from "@/shared/ui/skeleton";
 
 const ChatRoomSkeleton = () => (
   <div className="p-2">
-    <Skeleton className="h-8 w-full rounded-md" />
+    <Skeleton className="h-8 w-16 rounded-md" />
     <ul className="space-y-1">
       {Array(5)
         .fill(0)
