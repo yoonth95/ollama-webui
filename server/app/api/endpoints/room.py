@@ -1,20 +1,19 @@
+import asyncio
+import json
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 from datetime import datetime
+from app.db.database import get_db
 from app.services.room import RoomService, ROOM_TITLE_KEY_PREFIX, ROOM_CHANNEL_PREFIX
 from app.services.chat import ChatService
-from app.schemas.room import RoomCreateRequest, RoomRenameRequest
-from app.schemas.chat import ChatUserMessageType
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
-from app.db.database import get_db
 from app.utils.memory_pubsub import memory_pubsub
-import asyncio
-import json
+from app.schemas.room import RoomCreateRequest, RoomRenameRequest
+from app.schemas.chat import ChatUserMessageType
 import logging
-import random
 
 router = APIRouter()
 logging.basicConfig(level=logging.INFO)
@@ -132,39 +131,28 @@ async def stream_room_title(room_id: str, request: Request):
   logger.info(f"📩 클라이언트 채팅방 제목 SSE 연결: {room_id}")
   
   async def event_generator():
-    # PubSub 인터페이스 생성
     client = pubsub_client.pubsub()
-    connection_time = datetime.now()
     last_activity = datetime.now().timestamp()
     last_ping_time = datetime.now().timestamp()
     
     try:
-      # room:{room_id} 채널 구독
       client.subscribe(f"{ROOM_CHANNEL_PREFIX}{room_id}")
       
-      # 초기 연결 알림 메시지 전송
       yield {
         "event": "connected",
         "id": "connection-init",
         "data": json.dumps({"status": "connected", "room_id": room_id})
       }
       
-      # 이미 저장된 제목이 있는지 확인
       saved_title = pubsub_client.get(f"{ROOM_TITLE_KEY_PREFIX}{room_id}")
-      
       if saved_title:
-        # 이미 저장된 제목이 있으면 클라이언트에 전송
         saved_data = saved_title.decode('utf-8') if isinstance(saved_title, bytes) else saved_title
         try:
           title_data = json.loads(saved_data)
           response_data = {
-            "full": title_data.get("title", "새 채팅"),
-            "init": True,
+            "title": title_data.get("title", "새 채팅"),
             "updated_at": title_data.get("updated_at", datetime.now().isoformat()),
           }
-          
-          last_activity = datetime.now().timestamp()
-          
           yield {
             "event": "title",
             "id": "init",
@@ -173,23 +161,11 @@ async def stream_room_title(room_id: str, request: Request):
         except json.JSONDecodeError:
           logger.warning(f"채팅방 제목 데이터 파싱 오류: {saved_data}")
       
-      # 실시간 메시지 구독
       while True:
-        # 연결 시간 제한 확인 (30분)
-        if (datetime.now() - connection_time).total_seconds() > SSE_TIMEOUT:
-          logger.info(f"SSE 연결 제한 시간 초과: {room_id}")
-          yield {
-            "event": "timeout",
-            "data": json.dumps({"timeout": True, "message": "연결 제한 시간이 초과되었습니다."})
-          }
-          break
-          
-        # 클라이언트 연결 끊김 확인
         if await request.is_disconnected():
           logger.info(f"SSE 클라이언트 연결 끊김: {room_id}")
           break
         
-        # 15초마다 핑 메시지 전송
         now = datetime.now().timestamp()
         if now - last_ping_time > 15:
           last_ping_time = now
@@ -198,42 +174,37 @@ async def stream_room_title(room_id: str, request: Request):
             "data": json.dumps({"time": now})
           }
         
-        # PubSub 메시지 검사
-        message = client.get_message(timeout=1.0)
+        message = client.get_message(timeout=0.1)
         if message and message["type"] == "message":
           try:
-            # 간혼 방지를 위해 바이트 문자열을 문자열로 변환
             data = message["data"].decode('utf-8') if isinstance(message["data"], bytes) else message["data"]
             message_data = json.loads(data)
-            
-            # 제목 갱신 이벤트만 처리
             if message_data.get("event") == "title_updated":
               event_data = message_data.get("data", {})
               response_data = {
                 "title": event_data.get("title", "새 채팅"),
                 "updated_at": datetime.now().isoformat()
               }
-              
-              last_activity = datetime.now().timestamp()
-              
               yield {
                 "event": "title",
                 "data": json.dumps(response_data)
               }
+              last_activity = now
           except json.JSONDecodeError:
             logger.warning(f"JSON 데이터 파싱 오류: {message}")
-          except Exception as e:
-            logger.error(f"SSE 이벤트 처리 중 오류: {e}")
+            yield {
+              "event": "error",
+              "data": json.dumps({"error": "Invalid message format"})
+            }
         
-        # 5분 동안 업데이트가 없으면 연결 유지를 위한 메시지 발송
-        if current_time - last_activity > 300:  # 5분
+        if now - last_activity > 300:  # 5분
           yield {
             "event": "keepalive",
-            "data": json.dumps({"time": current_time})
+            "data": json.dumps({"time": now})
           }
-          last_activity = current_time
+          last_activity = now
         
-        await asyncio.sleep(0.5)  # CPU 과부하 방지
+        await asyncio.sleep(0.1)
     except Exception as e:
       logger.error(f"SSE 이벤트 스트림 오류: {e}")
       yield {
@@ -241,9 +212,7 @@ async def stream_room_title(room_id: str, request: Request):
         "data": json.dumps({"error": str(e)})
       }
     finally:
-      # PubSub 구독 취소
       try:
-        client.unsubscribe(f"{ROOM_CHANNEL_PREFIX}{room_id}")
         client.close()
       except Exception as e:
         logger.error(f"PubSub 구독 취소 오류: {e}")
