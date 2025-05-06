@@ -121,11 +121,18 @@ class RoomService:
 
         ### Chat History:
       """ + user_message
-
+      
       ollama_request = {
         "model": model,
         "prompt": prompt,
-        "stream": False
+        "stream": False,
+        "format": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" }
+          },
+          "required": ["title"]
+        }
       }
 
       async with aiohttp.ClientSession() as session:
@@ -133,16 +140,10 @@ class RoomService:
         async with session.post(url, json=ollama_request) as response:
           if response.status == 200:
             data = await response.json()
-            raw_response = data.get("response", "").strip()
-
-            try:
-              title_json = json.loads(raw_response)
-              title = title_json.get("title", "").strip()
-            except json.JSONDecodeError:
-              logger.warning(f"채팅방 타이틀 생성 실패 - 파싱 실패: {raw_response}")
-              title = "새 채팅"
-
-            return title
+            title = data.get("response", "").strip()
+            title = json.loads(title).get("title", "")
+            
+            return title if title and len(title.strip()) > 0 else "새 채팅"
           else:
             logger.error(f"채팅방 타이틀 생성 실패 - 응답 실패: {response.status}")
             return "새 채팅"
