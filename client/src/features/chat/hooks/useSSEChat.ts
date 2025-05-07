@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/shallow";
-import { queryKeys } from "@/shared/api";
-import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
-import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import useChatCancel from "@/features/chat/queries/useChatCancel";
 import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
+import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
+import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
+import { queryKeys } from "@/shared/api";
 
 /**
  * 채팅방 SSE 연결을 관리하는 훅
@@ -35,14 +35,28 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
   );
 
   // SSE 이벤트 소스 스토어
-  const [isStartSSE, setIsStartSSE, addEventSource, closeEventSource, getEventSource] = useSSEEventSourceStore(
-    useShallow((state) => [
-      state.isStartSSE,
-      state.setIsStartSSE,
-      state.addEventSource,
-      state.closeEventSource,
-      state.getEventSource,
-    ]),
+  const eventSourceStore = useSSEEventSourceStore();
+  const isStartSSE = eventSourceStore.isStartSSE.chat;
+
+  // 함수 참조가 변경되지 않도록 useCallback으로 래핑
+  const setIsStartSSE = useCallback(
+    (isStart: boolean) => eventSourceStore.setIsStartSSE("chat", isStart),
+    [eventSourceStore],
+  );
+
+  const addEventSource = useCallback(
+    (roomId: string, eventSource: EventSource) => eventSourceStore.addEventSource(roomId, "chat", eventSource),
+    [eventSourceStore],
+  );
+
+  const closeEventSource = useCallback(
+    (roomId: string) => eventSourceStore.closeEventSource(roomId, "chat"),
+    [eventSourceStore],
+  );
+
+  const getEventSource = useCallback(
+    (roomId: string) => eventSourceStore.getEventSource(roomId, "chat"),
+    [eventSourceStore],
   );
 
   const cleanupConnection = useCallback(() => {
@@ -59,7 +73,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
       eventSourceRef.current = null;
       isConnectingRef.current = false;
 
-      console.log("SSE 연결 종료");
+      console.log(`채팅방 ID: ${chatRoomId}의 Chat SSE 연결 종료`);
     }
   }, [
     chatRoomId,
@@ -98,7 +112,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     eventSourceRef.current = eventSource;
     isConnectingRef.current = true;
 
-    // 스토어에 EventSource 추가
+    // 스토어에 EventSource 추가 (chat 타입으로)
     addEventSource(chatRoomId, eventSource);
 
     // 연결 성공
@@ -246,7 +260,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
         setIsRetryLoading(false);
         eventSourceRef.current = null;
         isConnectingRef.current = false;
-        console.log("컴포넌트 언마운트 시 SSE 연결 종료");
+        console.log(`컴포넌트 언마운트 시 Chat SSE 연결 종료 (ID: ${chatRoomId})`);
       }
     };
   }, [
