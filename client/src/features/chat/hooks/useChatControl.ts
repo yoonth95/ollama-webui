@@ -18,10 +18,10 @@ export const useChatControl = (chatRoomId: string) => {
     if (chatRoomId) {
       console.log("사용자 요청에 의한 일반 중단");
       regularCancelMutation({ roomId: chatRoomId });
-      setIsStartSSE(false);
+      setIsStartSSE("chat", false);
 
       // 스토어를 통해 SSE 연결 종료
-      closeEventSource(chatRoomId);
+      closeEventSource("chat", chatRoomId);
     }
   };
 
@@ -30,10 +30,10 @@ export const useChatControl = (chatRoomId: string) => {
     if (chatRoomId) {
       console.log("사용자 요청에 의한 강제 중단");
       forceStopMutation({ roomId: chatRoomId });
-      setIsStartSSE(false);
+      setIsStartSSE("chat", false);
 
       // 스토어를 통해 SSE 연결 종료
-      closeEventSource(chatRoomId);
+      closeEventSource("chat", chatRoomId);
     }
   };
 

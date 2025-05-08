@@ -13,7 +13,7 @@ interface BotSSERendererPropsType {
 }
 
 const BotSSERenderer = ({ answerData, index = 0, sseData, roomId, type }: BotSSERendererPropsType) => {
-  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
+  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE["chat"] ?? false);
 
   // 오류 발생
   if (sseData.error) {

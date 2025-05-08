@@ -86,7 +86,7 @@ const useCreateChatRoom = () => {
         if (data.data?.id) {
           clearImages();
           setIsCreateRoomLoading(false);
-          setIsStartSSE(true);
+          setIsStartSSE("chat", true);
 
           // 홈 페이지에서 채팅방 이동
           navigate(`/chat/${data.data.id}`);

@@ -1,121 +1,110 @@
 import { create } from "zustand";
 
-// SSE 이벤트 유형 정의
-export type SSEEventType = "chat" | "title";
-
-// EventSource 식별을 위한 키 생성 함수
-export const createEventSourceKey = (roomId: string, type: SSEEventType): string => {
-  return `${roomId}:${type}`;
-};
+/**
+ * SSE 타입 식별자 → 예: "chat", "title" 등
+ */
+type EventSourceType = string;
 
 interface SSEEventSourceState {
-  // 채팅방 ID와 타입(chat/title)을 키로 사용하여 EventSource 객체를 저장
-  eventSources: Record<string, EventSource>;
+  /** 타입별 SSE 시작 여부 */
+  isStartSSE: Record<EventSourceType, boolean>;
 
-  isStartSSE: Record<SSEEventType, boolean>;
-  setIsStartSSE: (type: SSEEventType, isStartSSE: boolean) => void;
+  /**
+   * SSE 시작 상태 설정
+   * - setIsStartSSE("chat", true) → "chat" 타입의 시작 상태 설정
+   */
+  setIsStartSSE: (...args: [EventSourceType, boolean]) => void;
 
-  // EventSource 추가
-  addEventSource: (roomId: string, type: SSEEventType, eventSource: EventSource) => void;
+  /** 타입별 EventSource 맵 */
+  eventSources: Record<EventSourceType, Record<string, EventSource>>;
 
-  // EventSource 제거
-  removeEventSource: (roomId: string, type: SSEEventType) => void;
+  /**
+   * EventSource 추가
+   * - addEventSource("chat", key, eventSource) → "chat" 타입에 추가
+   */
+  addEventSource: (...args: [EventSourceType, string, EventSource]) => void;
 
-  // EventSource 가져오기
-  getEventSource: (roomId: string, type: SSEEventType) => EventSource | undefined;
+  /** EventSource 제거 (하위 호환 동일) */
+  removeEventSource: (...args: [EventSourceType, string]) => void;
 
-  // 특정 채팅방과 타입의 EventSource 연결 종료
-  closeEventSource: (roomId: string, type: SSEEventType) => void;
+  /** EventSource 가져오기 */
+  getEventSource: (...args: [EventSourceType, string]) => EventSource | undefined;
 
-  // 특정 채팅방의 모든 타입 EventSource 연결 종료
-  closeRoomEventSources: (roomId: string) => void;
+  /** 특정 EventSource 연결 종료 */
+  closeEventSource: (...args: [EventSourceType, string]) => void;
 
-  // 모든 EventSource 연결 종료
+  /** 타입별 모든 EventSource 연결 종료 */
+  closeAllEventSourcesByType: (type: EventSourceType) => void;
+
+  /** 전체 EventSource 연결 종료 */
   closeAllEventSources: () => void;
 }
 
 export const useSSEEventSourceStore = create<SSEEventSourceState>((set, get) => ({
-  // 초기 상태 설정
+  isStartSSE: {},
   eventSources: {},
-  isStartSSE: {
-    chat: false,
-    title: false,
-  },
 
-  // SSE 연결 시작 상태 설정 (타입별로 관리)
-  setIsStartSSE: (type, isStartSSE) => {
+  // 시작 상태 설정
+  setIsStartSSE: (...args) => {
+    const [type, isStart] = args;
     set((state) => ({
-      isStartSSE: {
-        ...state.isStartSSE,
-        [type]: isStartSSE,
-      },
+      isStartSSE: { ...state.isStartSSE, [type]: isStart },
     }));
   },
 
-  // EventSource 추가 (타입과 roomId로 구분)
-  addEventSource: (roomId, type, eventSource) => {
-    const key = createEventSourceKey(roomId, type);
+  // EventSource 추가 / 제거 / 조회
+  addEventSource: (...args) => {
+    const [type, key, es] = args;
     set((state) => ({
       eventSources: {
         ...state.eventSources,
-        [key]: eventSource,
+        [type]: { ...(state.eventSources[type] || {}), [key]: es },
       },
     }));
   },
 
-  // EventSource 제거
-  removeEventSource: (roomId, type) => {
-    const key = createEventSourceKey(roomId, type);
+  removeEventSource: (...args) => {
+    const [type, key] = args;
     set((state) => {
-      const newEventSources = { ...state.eventSources };
-      delete newEventSources[key];
+      const newTypeMap = { ...(state.eventSources[type] || {}) };
+      delete newTypeMap[key];
+      const newEventSources = { ...state.eventSources, [type]: newTypeMap };
+      if (Object.keys(newTypeMap).length === 0) delete newEventSources[type];
       return { eventSources: newEventSources };
     });
   },
 
-  // EventSource 가져오기
-  getEventSource: (roomId, type) => {
-    const key = createEventSourceKey(roomId, type);
-    return get().eventSources[key];
+  getEventSource: (...args) => {
+    const [type, key] = args;
+    return get().eventSources[type]?.[key];
   },
 
-  // 특정 채팅방과 타입의 EventSource 연결 종료
-  closeEventSource: (roomId, type) => {
-    const key = createEventSourceKey(roomId, type);
-    const eventSource = get().eventSources[key];
-    if (eventSource) {
-      console.log(`채팅방 ID: ${roomId}, 타입: ${type}의 SSE 연결 종료`);
-      eventSource.close();
-      get().removeEventSource(roomId, type);
+  // 연결 종료 로직
+  closeEventSource: (...args) => {
+    const [type, key] = args;
+    const es = get().eventSources[type]?.[key];
+    if (es) {
+      console.log(`위치: ${type} / 키: ${key} 의 SSE 연결 종료`);
+      es.close();
+      get().removeEventSource(type, key);
     }
   },
 
-  // 특정 채팅방의 모든 타입 EventSource 연결 종료
-  closeRoomEventSources: (roomId) => {
-    const { eventSources } = get();
+  closeAllEventSourcesByType: (type) => {
+    const map = get().eventSources[type] || {};
+    Object.values(map).forEach((es) => es.close());
 
-    // 특정 채팅방과 관련된 모든 EventSource 찾기
-    Object.entries(eventSources).forEach(([key, eventSource]) => {
-      if (key.startsWith(`${roomId}:`)) {
-        console.log(`채팅방 ID: ${roomId}의 SSE 연결 종료 (키: ${key})`);
-        eventSource.close();
-        // key는 "roomId:type" 형태로 되어 있으므로 타입을 추출
-        const type = key.split(":")[1] as SSEEventType;
-        get().removeEventSource(roomId, type);
-      }
+    set((state) => {
+      const newEventSources = { ...state.eventSources };
+      delete newEventSources[type];
+      return { eventSources: newEventSources };
     });
+
+    get().setIsStartSSE(type, false);
   },
 
-  // 모든 EventSource 연결 종료
   closeAllEventSources: () => {
-    const { eventSources } = get();
-
-    Object.entries(eventSources).forEach(([key, eventSource]) => {
-      console.log(`SSE 연결 종료 (키: ${key})`);
-      eventSource.close();
-    });
-
-    set({ eventSources: {} });
-    set({ isStartSSE: { chat: false, title: false } });
+    Object.values(get().eventSources).forEach((map) => Object.values(map).forEach((es) => es.close()));
+    set({ eventSources: {}, isStartSSE: {} });
   },
 }));

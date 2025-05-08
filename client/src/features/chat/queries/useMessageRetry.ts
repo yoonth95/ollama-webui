@@ -14,7 +14,7 @@ const useMessageRetry = (roomId: string) => {
     queryKeyToInvalidate: queryKeys.chats.messages(roomId),
     options: {
       onError: () => {
-        setIsStartSSE(false);
+        setIsStartSSE("chat", false);
         clearRetryInfo();
       },
     },

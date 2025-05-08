@@ -35,35 +35,21 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
   );
 
   // SSE 이벤트 소스 스토어
-  const eventSourceStore = useSSEEventSourceStore();
-  const isStartSSE = eventSourceStore.isStartSSE.chat;
-
-  // 함수 참조가 변경되지 않도록 useCallback으로 래핑
-  const setIsStartSSE = useCallback(
-    (isStart: boolean) => eventSourceStore.setIsStartSSE("chat", isStart),
-    [eventSourceStore],
-  );
-
-  const addEventSource = useCallback(
-    (roomId: string, eventSource: EventSource) => eventSourceStore.addEventSource(roomId, "chat", eventSource),
-    [eventSourceStore],
-  );
-
-  const closeEventSource = useCallback(
-    (roomId: string) => eventSourceStore.closeEventSource(roomId, "chat"),
-    [eventSourceStore],
-  );
-
-  const getEventSource = useCallback(
-    (roomId: string) => eventSourceStore.getEventSource(roomId, "chat"),
-    [eventSourceStore],
+  const [isStartSSE, setIsStartSSE, addEventSource, closeEventSource, getEventSource] = useSSEEventSourceStore(
+    useShallow((state) => [
+      state.isStartSSE["chat"] ?? false,
+      state.setIsStartSSE,
+      state.addEventSource,
+      state.closeEventSource,
+      state.getEventSource,
+    ]),
   );
 
   const cleanupConnection = useCallback(() => {
     if (chatRoomId) {
       queryClient.invalidateQueries({ queryKey: queryKeys.chats.messages(chatRoomId) });
-      closeEventSource(chatRoomId);
-      setIsStartSSE(false);
+      closeEventSource("chat", chatRoomId);
+      setIsStartSSE("chat", false);
       deactivateOptimisticUI();
       setIsRetryLoading(false);
       setIsRetryCompleted(true);
@@ -73,7 +59,7 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
       eventSourceRef.current = null;
       isConnectingRef.current = false;
 
-      console.log(`채팅방 ID: ${chatRoomId}의 Chat SSE 연결 종료`);
+      console.log("SSE 연결 종료");
     }
   }, [
     chatRoomId,
@@ -91,10 +77,10 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
 
     isConnectingRef.current = true;
 
-    const existingEventSource = getEventSource(chatRoomId);
-    if (existingEventSource) closeEventSource(chatRoomId); // 기존 연결이 있으면 닫기
+    const existingEventSource = getEventSource("chat", chatRoomId);
+    if (existingEventSource) closeEventSource("chat", chatRoomId); // 기존 연결이 있으면 닫기
 
-    setIsStartSSE(true);
+    setIsStartSSE("chat", true);
 
     // 새 스트림 시작 시 초기화
     setSseData({ isReceiving: true, content: "", userMessageId: "" });
@@ -105,15 +91,15 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     if (!chatRoomId || !isStartSSE) return;
 
     // 이미 EventSource가 있는지 확인
-    if (getEventSource(chatRoomId)) return;
+    if (getEventSource("chat", chatRoomId)) return;
 
     // SSE 연결
     const eventSource = new EventSource(`/api/v1/chat/stream/${chatRoomId}`);
     eventSourceRef.current = eventSource;
     isConnectingRef.current = true;
 
-    // 스토어에 EventSource 추가 (chat 타입으로)
-    addEventSource(chatRoomId, eventSource);
+    // 스토어에 EventSource 추가
+    addEventSource("chat", chatRoomId, eventSource);
 
     // 연결 성공
     eventSource.addEventListener("connected", (event) => {
@@ -256,11 +242,11 @@ export const useSSEChat = ({ chatRoomId }: UseSSEChatPropsType) => {
     // 컴포넌트 언마운트 또는 의존성 변경 시 연결 종료
     return () => {
       if (eventSourceRef.current) {
-        closeEventSource(chatRoomId);
+        closeEventSource("chat", chatRoomId);
         setIsRetryLoading(false);
         eventSourceRef.current = null;
         isConnectingRef.current = false;
-        console.log(`컴포넌트 언마운트 시 Chat SSE 연결 종료 (ID: ${chatRoomId})`);
+        console.log("컴포넌트 언마운트 시 SSE 연결 종료");
       }
     };
   }, [
