@@ -174,7 +174,8 @@ async def stream_room_title(room_id: str, request: Request):
             "data": json.dumps({"time": now})
           }
         
-        message = client.get_message(timeout=0.1)
+        message = await client.get_message(ignore_subscribe_messages=True, timeout=0.1)
+        
         if message and message["type"] == "message":
           try:
             data = message["data"].decode('utf-8') if isinstance(message["data"], bytes) else message["data"]
@@ -187,6 +188,7 @@ async def stream_room_title(room_id: str, request: Request):
               }
               yield {
                 "event": "title",
+                "id": room_id,
                 "data": json.dumps(response_data)
               }
               last_activity = now
