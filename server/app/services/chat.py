@@ -170,7 +170,9 @@ class ChatService:
     
     try:
       # 세션 초기화 및 메타데이터 설정
-      await ChatService._initialize_chat_session(room_id, model, user_message_id)
+      await ChatService._initialize_chat_session(room_id, model, user_message_id, publish_status=(answer_id==""))
+      
+      logger.debug(f"Room {room_id}: generate_ollama_answer 호출 – answer_id={answer_id}")
       
       result = await ChatService._process_ollama_api_request(room_id, ollama_request, model, user_message_id, answer_id)
       if result and answer_id:
@@ -199,8 +201,11 @@ class ChatService:
         del active_chats[room_id]
 
   @staticmethod
-  async def _initialize_chat_session(room_id: str, model: str, user_message_id: str):
+  async def _initialize_chat_session(room_id: str, model: str, user_message_id: str, publish_status: bool = True):
     """채팅 세션 초기화 및 메타데이터 설정"""
+    # 기존 상태, 캐시, 채널 큐 초기화 (재시도 시 이전 데이터가 섞이지 않도록)
+    ChatService._reset_room_state(room_id)
+
     # 현재 진행 중인 응답 생성 태스크 등록
     active_chats[room_id] = asyncio.current_task()
     
@@ -215,12 +220,13 @@ class ChatService:
     }
     pubsub_client.set(f"{METADATA_KEY_PREFIX}{room_id}", json.dumps(metadata), MESSAGE_EXPIRE_TIME)
     
-    # API 호출 시작 알림
-    await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
-      "status": "generating",
-      "model": model,
-      "timestamp": datetime.now().isoformat()
-    }))
+    # API 호출 시작 알림 (retry 시 중복 방지를 위해 옵션)
+    if publish_status:
+      await pubsub_client.publish(f"{CHAT_CHANNEL_PREFIX}{room_id}", json.dumps({
+        "status": "generating",
+        "model": model,
+        "timestamp": datetime.now().isoformat()
+      }))
 
   @staticmethod
   async def _process_ollama_api_request(room_id: str, ollama_request: dict, model: str, user_message_id: str, answer_id: str = ""):
@@ -948,6 +954,7 @@ class ChatService:
         ollama_request["messages"][0]["images"] = images
       
       logger.info(f"답변 재시도 시작 (answer_id: {answer_id}, user_message_id: {user_message.id})")
+      logger.debug(f"Room {room_id}: retry_answer – 새 태스크 생성 후 generate_ollama_answer 호출")
       asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request, user_message.id, answer_id))  
       return True, "답변 재시도 시작", 200
     except Exception as e:
@@ -956,3 +963,22 @@ class ChatService:
     finally:
       if new_session:
         db.close()
+
+  @staticmethod
+  def _reset_room_state(room_id: str):
+    """재시도 시작 전 기존 상태를 정리하여 응답/재시도 데이터가 섞이는 것을 방지"""
+    # 완료/취소 플래그 초기화
+    cancelled_chats.pop(room_id, None)
+    force_stopped_chats.pop(room_id, None)
+    completed_chats.pop(room_id, None)
+
+    # 인메모리 캐시(답변/오류 카운터) 삭제
+    pubsub_client.delete(f"{ANSWER_KEY_PREFIX}{room_id}")
+    pubsub_client.delete(f"{ERROR_COUNTER_PREFIX}{room_id}")
+
+    # 채널 큐 클리어하여 이전 세션의 미전송 메시지 제거
+    try:
+      pubsub_client.clear_channel(f"{CHAT_CHANNEL_PREFIX}{room_id}")
+    except Exception:
+      # clear_channel은 구현체에 따라 없을 수 있으므로 예외 무시
+      pass
