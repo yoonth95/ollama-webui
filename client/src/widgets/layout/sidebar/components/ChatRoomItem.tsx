@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChatRoomItemMenu } from "@/widgets/layout/sidebar/components";
+import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { DropdownMenu, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
 import useChatRoomStore from "@/shared/stores/useChatRoomStore";
 import { ChatRoomType } from "@/shared/types/chatRoomType";
-import { cn } from "@/shared/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 
 interface ChatRoomItemPropsType {
@@ -17,7 +17,7 @@ const ChatRoomItem = ({ room }: ChatRoomItemPropsType) => {
   const [openedRoom, setOpenedRoom] = useState<string | null>(null);
   const chatRooms = useChatRoomStore((state) => state.chatRooms);
 
-  const currentChatRoom = chatRooms.find((room) => room.id === room.id) || room;
+  const currentChatRoom = chatRooms.find((chatRoom) => chatRoom.id === room.id) || room;
   const isEnterRoom = room.id && pathname.includes(room.id);
   const isActive = openedRoom === room.id || (hoveredRoom === room.id && !openedRoom) || isEnterRoom;
 

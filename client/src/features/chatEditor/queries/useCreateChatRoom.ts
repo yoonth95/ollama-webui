@@ -3,7 +3,7 @@ import { useShallow } from "zustand/shallow";
 import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
 import { queryKeys, useCustomMutation } from "@/shared/api";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
-import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
+import useChatRoomStore from "@/shared/stores/useChatRoomStore";
 import { ImageDataType } from "@/shared/types/chatMessageType";
 import {
   ChatRoomSchema,
@@ -15,6 +15,7 @@ import {
 const useCreateChatRoom = () => {
   const navigate = useNavigate();
   const clearImages = useEditorImageStore((state) => state.clearImages);
+  const addChatRoom = useChatRoomStore((state) => state.addChatRoom);
   const [activateOptimisticUI, deactivateOptimisticUI, setChatDataList, clearChatDataList, setIsCreateRoomLoading] =
     useChatOptimisticStore(
       useShallow((state) => [
@@ -25,8 +26,6 @@ const useCreateChatRoom = () => {
         state.setIsCreateRoomLoading,
       ]),
     );
-
-  const setIsStartSSE = useSSEEventSourceStore((state) => state.setIsStartSSE);
 
   return useCustomMutation<ChatRoomType, CreateChatRoomRequestType>({
     endpoint: `/room/create-room`,
@@ -83,13 +82,21 @@ const useCreateChatRoom = () => {
         ]);
       },
       onSuccess: (data) => {
-        if (data.data?.id) {
+        const result = data.data;
+        if (result) {
           clearImages();
           setIsCreateRoomLoading(false);
-          setIsStartSSE(true);
+
+          addChatRoom({
+            id: result.id,
+            title: result.title,
+            isArchived: result.isArchived,
+            createdAt: result.createdAt,
+            updatedAt: result.updatedAt,
+          });
 
           // 홈 페이지에서 채팅방 이동
-          navigate(`/chat/${data.data.id}`);
+          navigate(`/chat/${result.id}`);
         }
       },
       onError: (error) => {

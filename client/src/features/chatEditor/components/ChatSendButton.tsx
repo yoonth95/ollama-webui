@@ -1,9 +1,9 @@
+import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
+import { useChatControl } from "@/features/chat/hooks/useChatControl";
 import { Button } from "@/shared/ui/button";
 import { TooltipContainer } from "@/shared/components";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
-import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
-import { useChatControl } from "@/features/chat/hooks/useChatControl";
 import { CircleStop, LoaderCircle, Send } from "lucide-react";
 
 interface ChatSendButtonPropsType {
@@ -16,7 +16,7 @@ const ChatSendButton = ({ chatRoomId, hasValidContent, isPending, onSubmit }: Ch
   const images = useEditorImageStore((state) => state.images);
   const { cancelChat } = useChatControl(chatRoomId);
   const isCreateRoomLoading = useChatOptimisticStore((state) => state.isCreateRoomLoading);
-  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
+  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE["chat"] ?? false);
 
   // 입력 내용, 이미지 모두 없는 경우 전송 버튼 비활성화
   const hasNoContent = !hasValidContent && images.length === 0;

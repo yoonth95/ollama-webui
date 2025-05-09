@@ -1,9 +1,9 @@
-import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
 import { toast } from "react-toastify";
 import useCreateChatRoom from "@/features/chatEditor/queries/useCreateChatRoom";
 import { useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
+import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
 
 const TOAST_ID = "model-select-toast";
 
@@ -14,7 +14,7 @@ interface MessageSubmitPropsType {
 export const useMessageSubmit = ({ editorRef, chatRoomId }: MessageSubmitPropsType) => {
   const selectedModel = useModelSelectStore((state) => state.selectedModel);
   const getImages = useEditorImageStore((state) => state.getImages);
-  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
+  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE["chat"] ?? false);
 
   const { mutate: createChatRoom, isPending: isCreatingRoom } = useCreateChatRoom();
 

@@ -13,7 +13,7 @@ const useChatState = (roomId: string, historyChatData: ChatMessageType[], isLast
   const [isRetryLoading, isRetryCompleted, retryType, retriedAssistantId] = useChatOptimisticStore(
     useShallow((state) => [state.isRetryLoading, state.isRetryCompleted, state.retryType, state.retriedAssistantId]),
   );
-  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE);
+  const isStartSSE = useSSEEventSourceStore((state) => state.isStartSSE["chat"] ?? false);
   const { sseData, startSSEConnection } = useSSEChat({ chatRoomId: roomId });
 
   const lastSseDataRef = useRef(sseData);
