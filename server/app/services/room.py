@@ -103,10 +103,11 @@ class RoomService:
         Generate a concise, 3-5 word title with an emoji summarizing the chat history.
 
         ### Guidelines:
-        - The title should clearly represent the main theme or subject of the conversation.
-        - Use emojis to enhance the topic's meaning, but avoid quotation marks or special formatting.
-        - Write the title in the primary language used in the conversation; default to English if the language is unclear.
-        - Prioritize clarity and accuracy over excessive creativity.
+        - The title should clearly reflect the user's main question or topic.
+        - Use emojis to visually reinforce the topic, but do not use quotation marks or extra punctuation.
+        - Write the title in the same language as the majority of the conversation; if unclear, default to English.
+        - Focus on clarity, relevance, and brevity—avoid overly creative or vague titles.
+        - If the conversation is primarily a technical question, frame the title to reflect that.
 
         ### Output:
         JSON format: { "title": "your concise title here" }
