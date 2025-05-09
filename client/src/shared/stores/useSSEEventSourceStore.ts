@@ -20,7 +20,7 @@ interface SSEEventSourceState {
 
   /**
    * EventSource 추가
-   * - addEventSource("chat", key, eventSource) → "chat" 타입에 추가
+   * - addEventSource("chat", roomId, eventSource) → "chat" 타입에 추가
    */
   addEventSource: (...args: [EventSourceType, string, EventSource]) => void;
 
@@ -54,20 +54,20 @@ export const useSSEEventSourceStore = create<SSEEventSourceState>((set, get) => 
 
   // EventSource 추가 / 제거 / 조회
   addEventSource: (...args) => {
-    const [type, key, es] = args;
+    const [type, roomId, es] = args;
     set((state) => ({
       eventSources: {
         ...state.eventSources,
-        [type]: { ...(state.eventSources[type] || {}), [key]: es },
+        [type]: { ...(state.eventSources[type] || {}), [roomId]: es },
       },
     }));
   },
 
   removeEventSource: (...args) => {
-    const [type, key] = args;
+    const [type, roomId] = args;
     set((state) => {
       const newTypeMap = { ...(state.eventSources[type] || {}) };
-      delete newTypeMap[key];
+      delete newTypeMap[roomId];
       const newEventSources = { ...state.eventSources, [type]: newTypeMap };
       if (Object.keys(newTypeMap).length === 0) delete newEventSources[type];
       return { eventSources: newEventSources };
@@ -75,18 +75,18 @@ export const useSSEEventSourceStore = create<SSEEventSourceState>((set, get) => 
   },
 
   getEventSource: (...args) => {
-    const [type, key] = args;
-    return get().eventSources[type]?.[key];
+    const [type, roomId] = args;
+    return get().eventSources[type]?.[roomId];
   },
 
   // 연결 종료 로직
   closeEventSource: (...args) => {
-    const [type, key] = args;
-    const es = get().eventSources[type]?.[key];
+    const [type, roomId] = args;
+    const es = get().eventSources[type]?.[roomId];
     if (es) {
-      console.log(`위치: ${type} / 키: ${key} 의 SSE 연결 종료`);
+      console.log(`타입: ${type} / 채팅방: ${roomId} 의 SSE 연결 종료`);
       es.close();
-      get().removeEventSource(type, key);
+      get().removeEventSource(type, roomId);
     }
   },
 
