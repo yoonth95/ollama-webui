@@ -4,7 +4,12 @@ import { useGetChatMessages } from "@/features/chat/queries/useGetChatMessages";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { useSSETitle } from "@/features/chat/hooks/useSSETitle";
 
-const MessageList = ({ chatRoomId }: { chatRoomId: string }) => {
+interface MessageListProps {
+  chatRoomId: string;
+  onRenderComplete?: () => void; // 추가
+}
+
+const MessageList = ({ chatRoomId, onRenderComplete }: MessageListProps) => {
   const isOptimistic = useChatOptimisticStore((state) => state.isOptimistic);
   const { data: historyMessages, isLoading, isLastBotMessage, isError } = useGetChatMessages(chatRoomId, isOptimistic);
   const { startSSEConnection: startTitleSSEConnection } = useSSETitle({ chatRoomId });
@@ -22,7 +27,12 @@ const MessageList = ({ chatRoomId }: { chatRoomId: string }) => {
   if (isLoading) return <MessageSkeleton />;
   if (!historyMessages?.data?.length) return null;
   return (
-    <RegularRenderer roomId={chatRoomId} historyChatData={historyMessages.data} isLastBotMessage={isLastBotMessage} />
+    <RegularRenderer
+      roomId={chatRoomId}
+      historyChatData={historyMessages.data}
+      isLastBotMessage={isLastBotMessage}
+      onRenderComplete={onRenderComplete}
+    />
   );
 };
 
