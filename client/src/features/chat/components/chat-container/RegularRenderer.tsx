@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   BotMessageEmpty,
   BotMessageLayout,
@@ -13,14 +13,13 @@ interface RegularRendererPropsType {
   roomId: string;
   historyChatData: ChatMessageType[];
   isLastBotMessage: boolean;
-  onRenderComplete?: () => void;
 }
 
 /**
  * 일반 채팅 렌더링을 담당하는 컴포넌트
  * 채팅 이력, 재시도 및 빈 챗 상태를 처리
  */
-const RegularRenderer = ({ roomId, historyChatData, isLastBotMessage, onRenderComplete }: RegularRendererPropsType) => {
+const RegularRenderer = ({ roomId, historyChatData, isLastBotMessage }: RegularRendererPropsType) => {
   const {
     sseData,
     lastSseDataRef,
@@ -61,11 +60,6 @@ const RegularRenderer = ({ roomId, historyChatData, isLastBotMessage, onRenderCo
 
   // 모든 기록 메시지 렌더링
   const renderedHistoryMessages = useMemo(() => historyChatData.map(renderMessage), [historyChatData, renderMessage]);
-
-  // 렌더링 완료 후 onRenderComplete 호출
-  useEffect(() => {
-    if (onRenderComplete) onRenderComplete();
-  }, [renderedHistoryMessages, onRenderComplete]);
 
   return (
     <>

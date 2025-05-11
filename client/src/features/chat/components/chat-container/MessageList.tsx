@@ -6,10 +6,9 @@ import { useSSETitle } from "@/features/chat/hooks/useSSETitle";
 
 interface MessageListProps {
   chatRoomId: string;
-  onRenderComplete?: () => void; // 추가
 }
 
-const MessageList = ({ chatRoomId, onRenderComplete }: MessageListProps) => {
+const MessageList = ({ chatRoomId }: MessageListProps) => {
   const isOptimistic = useChatOptimisticStore((state) => state.isOptimistic);
   const { data: historyMessages, isLoading, isLastBotMessage, isError } = useGetChatMessages(chatRoomId, isOptimistic);
   const { startSSEConnection: startTitleSSEConnection } = useSSETitle({ chatRoomId });
@@ -27,12 +26,7 @@ const MessageList = ({ chatRoomId, onRenderComplete }: MessageListProps) => {
   if (isLoading) return <MessageSkeleton />;
   if (!historyMessages?.data?.length) return null;
   return (
-    <RegularRenderer
-      roomId={chatRoomId}
-      historyChatData={historyMessages.data}
-      isLastBotMessage={isLastBotMessage}
-      onRenderComplete={onRenderComplete}
-    />
+    <RegularRenderer roomId={chatRoomId} historyChatData={historyMessages.data} isLastBotMessage={isLastBotMessage} />
   );
 };
 
