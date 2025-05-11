@@ -1,18 +1,19 @@
-import { OptimisticLoading, MessageList } from "@/features/chat/components";
+import ScrollToBottom from "react-scroll-to-bottom";
+import { ScrollableChat } from "@/features/chat/components";
 
 interface ChatContainerPropsType {
   isHome: boolean;
   chatRoomId: string;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  onRenderComplete?: () => void; // 추가
 }
-
-const ChatContainer = ({ isHome, chatRoomId, containerRef, onRenderComplete }: ChatContainerPropsType) => {
+const ChatContainer = ({ isHome, chatRoomId }: ChatContainerPropsType) => {
   return (
-    <section ref={containerRef} className="themed-scrollbar relative flex h-full w-full justify-center overflow-y-auto">
-      <div className="flex h-full w-full flex-col px-3 text-base md:max-w-[42rem] xl:max-w-[48rem]">
-        {isHome ? <OptimisticLoading /> : <MessageList chatRoomId={chatRoomId} onRenderComplete={onRenderComplete} />}
-      </div>
+    <section className="relative h-full w-full">
+      <ScrollToBottom
+        className="themed-scrollbar relative flex h-full w-full justify-center overflow-y-auto"
+        followButtonClassName="hidden"
+      >
+        <ScrollableChat isHome={isHome} chatRoomId={chatRoomId} />
+      </ScrollToBottom>
     </section>
   );
 };
