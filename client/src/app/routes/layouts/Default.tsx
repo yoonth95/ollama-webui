@@ -28,7 +28,7 @@ export default function DefaultLayout() {
   useLocationChange(handleRouteChange);
 
   return (
-    <div className="bg-background flex h-screen">
+    <div className="bg-background flex h-screen overflow-hidden">
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar />
         <div className="flex flex-1 flex-col">
