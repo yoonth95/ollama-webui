@@ -8,9 +8,11 @@ const Chat = () => {
   const { chatRoomId = "" } = useParams<{ chatRoomId?: string }>();
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] w-full flex-col justify-between">
+    <div className="relative flex h-[calc(100vh-3rem)] w-full flex-col justify-between">
       <ErrorBoundary key={chatRoomId} FallbackComponent={ErrorChatPage}>
-        <ChatContainer isHome={false} chatRoomId={chatRoomId} />
+        <div className="flex-1 overflow-hidden">
+          <ChatContainer isHome={false} chatRoomId={chatRoomId} />
+        </div>
         <EditorContainer />
       </ErrorBoundary>
     </div>

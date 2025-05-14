@@ -4,7 +4,11 @@ import { useGetChatMessages } from "@/features/chat/queries/useGetChatMessages";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { useSSETitle } from "@/features/chat/hooks/useSSETitle";
 
-const MessageList = ({ chatRoomId }: { chatRoomId: string }) => {
+interface MessageListProps {
+  chatRoomId: string;
+}
+
+const MessageList = ({ chatRoomId }: MessageListProps) => {
   const isOptimistic = useChatOptimisticStore((state) => state.isOptimistic);
   const { data: historyMessages, isLoading, isLastBotMessage, isError } = useGetChatMessages(chatRoomId, isOptimistic);
   const { startSSEConnection: startTitleSSEConnection } = useSSETitle({ chatRoomId });

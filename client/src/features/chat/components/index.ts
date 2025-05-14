@@ -20,6 +20,7 @@ import OptimisticRenderer from "./chat-container/OptimisticRenderer";
 import RegularRenderer from "./chat-container/RegularRenderer";
 import MessageSkeleton from "./chat-container/MessageSkeleton";
 import ErrorChatPage from "./chat-container/ErrorChatPage";
+import ScrollableChat from "./chat-container/ScrollableChat";
 
 export {
   UserMessageBox,
@@ -42,4 +43,5 @@ export {
   RegularRenderer,
   MessageSkeleton,
   ErrorChatPage,
+  ScrollableChat,
 };
