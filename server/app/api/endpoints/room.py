@@ -46,6 +46,12 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
       logger.error("채팅방 생성 실패: 빈 응답")
       return JSONResponse(content=create_response(False, "채팅방 생성 실패", None), status_code=500)
     
+    content = request.content or ""
+    has_images = bool(request.images)
+
+    if not content and has_images:
+      content = "Please interpret the images"
+
     user_message = {
       "room_id": response["id"],
       "content": request.content,
@@ -54,12 +60,12 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
     ollama_request = {
       "model": request.model,
       "messages": [
-        { "role": "user", "content": request.content }
+        { "role": "user", "content": content }
       ]
     }
     if request.images:
       user_message["images"] = request.images
-      ollama_request["messages"][0]["images"] = request.images
+      ollama_request["messages"][0]["images"] = [image.data for image in request.images]
     
     # 유저 메시지 저장 (commit=False로 설정하여 자동 커밋 방지)
     user_response_data = await ChatService.save_user_message(db, ChatUserMessageType(**user_message), commit=False)
@@ -72,7 +78,7 @@ async def create_new_room(request: RoomCreateRequest, db: Session = Depends(get_
     asyncio.create_task(ChatService.generate_ollama_answer(response["id"], ollama_request, user_message_id))
 
     # 타이틀 생성
-    asyncio.create_task(RoomService.generate_and_update_title(response["id"], request.content, request.model))
+    asyncio.create_task(RoomService.generate_and_update_title(response["id"], content, request.model))
 
     # await asyncio.sleep(3)
     return JSONResponse(content=create_response(True, "채팅방 생성 완료", response), status_code=200)

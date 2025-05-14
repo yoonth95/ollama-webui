@@ -15,7 +15,7 @@ class ChatCrud:
       content=user_message.content,
     )
     if user_message.images:
-      chat.images = user_message.images
+      chat.images = [img.model_dump() for img in user_message.images]
     
     db.add(chat)
     

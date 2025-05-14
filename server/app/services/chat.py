@@ -942,8 +942,14 @@ class ChatService:
         return False, "질문 메시지를 찾을 수 없습니다.", 404
       
       model = user_message.model
-      content = user_message.content
-      images = user_message.images
+      images = [item["data"] for item in user_message.images]
+
+      content = user_message.content or ""
+      has_images = bool(images)
+
+      if not content and has_images:
+        content = "Please interpret the images"
+
       ollama_request = {
         "model": model,
         "messages": [
@@ -952,7 +958,7 @@ class ChatService:
       }
       if images:
         ollama_request["messages"][0]["images"] = images
-      
+
       logger.info(f"답변 재시도 시작 (answer_id: {answer_id}, user_message_id: {user_message.id})")
       logger.debug(f"Room {room_id}: retry_answer – 새 태스크 생성 후 generate_ollama_answer 호출")
       asyncio.create_task(ChatService.generate_ollama_answer(room_id, ollama_request, user_message.id, answer_id))  
