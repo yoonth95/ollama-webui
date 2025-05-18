@@ -2,12 +2,12 @@ import { useEffect } from "react";
 import { useSidebar } from "@/shared/ui/sidebar";
 import { Button } from "@/shared/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
-import { SidebarActionButton, ThemeToggle } from "@/shared/components";
+import { SidebarActionButton } from "@/shared/components";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useModelSelectStore } from "@/shared/stores/useModelSelectStore";
 import { cn } from "@/shared/lib/utils";
 import { useGetModels } from "@/widgets/layout/header/queries";
-import { ErrorDisplay, HeaderDropdownMenu } from "@/widgets/layout/header/components";
+import { ErrorDisplay, HeaderDropdownMenu, EnvironmentButton } from "@/widgets/layout/header/components";
 import { DisplayType } from "@/shared/types/apiType";
 import { ChevronDown, LoaderCircle } from "lucide-react";
 
@@ -64,7 +64,7 @@ const Header = () => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <ThemeToggle />
+        <EnvironmentButton />
       </div>
     </header>
   );
