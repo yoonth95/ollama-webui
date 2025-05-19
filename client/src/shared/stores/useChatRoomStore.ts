@@ -8,6 +8,7 @@ type useChatRoomStoreType = {
   addChatRoom: (room: ChatRoomType) => void;
   updateChatRoomTitle: (roomId: string, newTitle: string) => void;
   deleteChatRoom: (roomId: string) => void;
+  deleteAllChatRooms: () => void;
 };
 
 // 채팅방 관리 스토어 생성
@@ -52,6 +53,11 @@ const useChatRoomStore = create<useChatRoomStoreType>((set) => ({
     set((state) => ({
       chatRooms: state.chatRooms.filter((room) => room.id !== roomId),
     }));
+  },
+
+  // 모든 채팅방 삭제
+  deleteAllChatRooms: () => {
+    set({ chatRooms: [] });
   },
 }));
 
