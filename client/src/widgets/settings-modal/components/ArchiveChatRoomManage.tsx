@@ -1,4 +1,4 @@
-import SettingAction from "./SettingAction";
+import { SettingAction } from "@/widgets/settings-modal/components";
 
 const ArchiveChatRoomManage = () => {
   const handleManage = () => {
