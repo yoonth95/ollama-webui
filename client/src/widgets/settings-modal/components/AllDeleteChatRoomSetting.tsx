@@ -1,9 +1,24 @@
-import SettingAction from "./SettingAction";
+import { useLocation, useNavigate } from "react-router-dom";
+import { SettingAction } from "@/widgets/settings-modal/components";
+import useDeleteAllChatRoom from "@/widgets/settings-modal/queries/useDeleteAllChatRoom";
+import useChatRoomStore from "@/shared/stores/useChatRoomStore";
 
 const AllDeleteChatRoomSetting = () => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { mutate: deleteAllChatRoomMutate } = useDeleteAllChatRoom();
+  const deleteAllChatRooms = useChatRoomStore((state) => state.deleteAllChatRooms);
+
   const handleDelete = () => {
-    // 여기에 삭제 로직 구현
-    console.log("모든 채팅방을 삭제했습니다.");
+    deleteAllChatRoomMutate(
+      {},
+      {
+        onSuccess: () => {
+          deleteAllChatRooms();
+          if (pathname.includes("/chat/")) navigate("/");
+        },
+      },
+    );
   };
 
   return (
