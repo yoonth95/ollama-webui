@@ -55,6 +55,13 @@ class RoomCrud:
       db.commit()
       return True
     return False
+
+  @staticmethod
+  def delete_all_rooms(db: Session):
+    """모든 채팅방 삭제"""
+    db.query(Room).delete()
+    db.commit()
+    return True
   
   @staticmethod
   def update_room_title(db: Session, room_id: str, new_title: str):

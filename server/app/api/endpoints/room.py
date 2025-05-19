@@ -116,6 +116,17 @@ async def delete_room(room_id: str, db: Session = Depends(get_db)):
 
   return JSONResponse(content=create_response(True, "채팅방 삭제 성공", None), status_code=200)
 
+@router.delete("/room/delete-all")
+@handle_exceptions
+async def delete_all_rooms(db: Session = Depends(get_db)):
+  """모든 채팅방 삭제"""
+  logger.info(f"📩 클라이언트 모든 채팅방 삭제")
+  
+  await RoomService.delete_all_rooms_service(db)
+
+  return JSONResponse(content=create_response(True, "모든 채팅방 삭제 성공", None), status_code=200)
+
+
 @router.patch("/room/update-room-title")
 @handle_exceptions
 async def update_room_title(request: RoomRenameRequest, db: Session = Depends(get_db)):

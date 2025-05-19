@@ -52,6 +52,11 @@ class RoomService:
     return RoomCrud.delete_room(db, room_id)
     
   @staticmethod
+  async def delete_all_rooms_service(db: Session) -> bool:
+    """모든 채팅방 삭제"""
+    return RoomCrud.delete_all_rooms(db)
+    
+  @staticmethod
   async def update_room_title_service(db: Session, room_id: str, new_title: str) -> bool:
     """채팅방 제목 수정"""
     return RoomCrud.update_room_title(db, room_id, new_title)
