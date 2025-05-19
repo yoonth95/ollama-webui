@@ -12,7 +12,7 @@ const useDeleteChatRoom = () => {
     method: "DELETE",
     paramsSchema: deleteChatRoomSchema,
     showToastOnSuccess: true,
-    queryKeyToInvalidate: queryKeys.rooms.list(),
+    queryKeyToRemove: queryKeys.rooms.list(),
   });
 };
 
