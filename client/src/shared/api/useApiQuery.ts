@@ -108,6 +108,7 @@ export function useCustomSuspenseQuery<TRes>({
  * @param options React Query 옵션 설정 (선택 사항)
  * @param showToastOnSuccess 성공 시 toast 띄울지 여부 (선택 사항)
  * @param queryKeyToInvalidate 초기화할 쿼리 키 (선택 사항)
+ * @param queryKeyToRemove 제거할 쿼리 키 (선택 사항)
  * @returns 검증된 데이터와 메타데이터를 포함한 객체
  */
 export function useCustomMutation<TRes = undefined, TReq = undefined, TParams = Record<string, string | number>>({
@@ -119,6 +120,7 @@ export function useCustomMutation<TRes = undefined, TReq = undefined, TParams = 
   errorOptions = { type: DisplayType.Toast },
   showToastOnSuccess = false,
   queryKeyToInvalidate = undefined,
+  queryKeyToRemove = undefined,
   options = {},
   configs = {},
 }: UseCustomMutationType<TRes, TReq, TParams>) {
@@ -136,9 +138,13 @@ export function useCustomMutation<TRes = undefined, TReq = undefined, TParams = 
       if (showToastOnSuccess && data.message) {
         toast.success(data.message);
       }
-      // 쿼리 키 초기화 (queryKeyToInvalidate가 있을 때)
+      // 쿼리 키 초기화 - 캐시는 유지하고 데이터만 초기화 (추가 및 업데이트) (queryKeyToInvalidate가 있을 때)
       if (queryKeyToInvalidate) {
         queryClient.invalidateQueries({ queryKey: queryKeyToInvalidate });
+      }
+      // 쿼리 키 제거 - 캐시도 제거 (삭제) (queryKeyToRemove가 있을 때)
+      if (queryKeyToRemove) {
+        queryClient.removeQueries({ queryKey: queryKeyToRemove });
       }
       // 사용자가 options로 전달한 onSuccess가 있으면 실행
       if (options.onSuccess) {

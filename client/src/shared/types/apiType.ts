@@ -38,6 +38,7 @@ export type UseCustomMutationType<TRes = undefined, TReq = undefined, TParams = 
   errorOptions?: ErrorHandlingOptions;
   showToastOnSuccess?: boolean;
   queryKeyToInvalidate?: string[];
+  queryKeyToRemove?: string[];
   configs?: Omit<AxiosRequestConfig, "method" | "data">;
   options?: Omit<
     UseMutationOptions<ApiResponseType<TRes>, ApiError, { data?: TReq; params?: TParams } | TReq | undefined>,
