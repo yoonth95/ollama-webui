@@ -62,6 +62,21 @@ class RoomService:
     return RoomCrud.update_room_title(db, room_id, new_title)
 
   @staticmethod
+  async def archive_room_service(db: Session, room_id: str) -> bool:
+    """채팅방 보관"""
+    return RoomCrud.archive_room(db, room_id)
+
+  @staticmethod
+  async def unarchive_room_service(db: Session, room_id: str) -> bool:
+    """채팅방 복구"""
+    return RoomCrud.unarchive_room(db, room_id)
+
+  @staticmethod
+  async def archive_all_rooms_service(db: Session) -> bool:
+    """모든 채팅방 보관"""
+    return RoomCrud.archive_all_rooms(db)
+
+  @staticmethod
   async def generate_and_update_title(room_id: str, user_message: str, model: str):
     """채팅방 제목 생성 및 업데이트"""
     try:

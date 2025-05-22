@@ -72,3 +72,30 @@ class RoomCrud:
       db.commit()
       return True
     return False
+
+  @staticmethod
+  def archive_room(db: Session, room_id: str):
+    """채팅방 보관"""
+    room = db.query(Room).filter(Room.id == room_id).first()
+    if room:
+      room.is_archived = True
+      db.commit()
+      return True
+    return False
+
+  @staticmethod
+  def unarchive_room(db: Session, room_id: str):
+    """채팅방 복구"""
+    room = db.query(Room).filter(Room.id == room_id).first()
+    if room:
+      room.is_archived = False
+      db.commit()
+      return True
+    return False
+
+  @staticmethod
+  def archive_all_rooms(db: Session):
+    """모든 채팅방 보관"""
+    db.query(Room).update({"is_archived": True})
+    db.commit()
+    return True
