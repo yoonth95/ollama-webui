@@ -19,17 +19,17 @@ class RoomCrud:
     return new_room
 
   @staticmethod
-  def get_rooms(db: Session, page: int, limit: int):
-    """채팅방 목록 조회(페이지네이션) - 보관되지 않은 채팅방만"""
+  def _get_rooms_by_archive_status(db: Session, page: int, limit: int, is_archived: bool):
+    """채팅방 목록 조회 공통 로직 (페이지네이션)"""
     offset = (page - 1) * limit
     
-    total_items = db.query(Room).filter(Room.is_archived == False).count()
+    total_items = db.query(Room).filter(Room.is_archived == is_archived).count()
     
     total_pages = (total_items + limit - 1) // limit
     
     items = (
       db.query(Room)
-      .filter(Room.is_archived == False)
+      .filter(Room.is_archived == is_archived)
       .order_by(Room.created_at.desc())
       .offset(offset)
       .limit(limit)
@@ -45,6 +45,16 @@ class RoomCrud:
         "total_items": total_items
       }
     }
+
+  @staticmethod
+  def get_rooms(db: Session, page: int, limit: int):
+    """채팅방 목록 조회(페이지네이션) - 보관되지 않은 채팅방만"""
+    return RoomCrud._get_rooms_by_archive_status(db, page, limit, is_archived=False)
+
+  @staticmethod
+  def get_archived_rooms(db: Session, page: int, limit: int):
+    """보관된 채팅방 목록 조회(페이지네이션)"""
+    return RoomCrud._get_rooms_by_archive_status(db, page, limit, is_archived=True)
 
   @staticmethod
   def delete_room(db: Session, room_id: str):
