@@ -4,7 +4,7 @@ import { ConfirmDialog } from "@/shared/components";
 import { useDialogVisibility } from "@/shared/stores/dialogVisibility";
 import { cn } from "@/shared/lib/utils";
 
-export type SettingActionType = "archive" | "manage" | "delete";
+export type SettingActionType = "archive" | "delete";
 
 interface SettingActionPropsType {
   type: SettingActionType;
@@ -59,6 +59,7 @@ const SettingAction = ({
         description={description}
         open={showConfirmDialog}
         onOpenChange={setShowConfirmDialog}
+        hasOverlay={false}
         onConfirm={handleAction}
         confirmText={confirmText}
         confirmColor={confirmColor}
