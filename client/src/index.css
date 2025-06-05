@@ -155,7 +155,7 @@
   }
   .themed-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-muted-foreground) var(--color-sidebar);
+    scrollbar-color: var(--color-muted-foreground) transparent;
   }
 
   /* 코드블럭 가로 스크롤바 크기 조정 */
