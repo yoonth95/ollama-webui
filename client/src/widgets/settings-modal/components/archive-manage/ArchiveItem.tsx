@@ -1,19 +1,23 @@
 import { Link } from "react-router-dom";
 import TooltipContainer from "@/shared/components/TooltipContainer";
-import { TableRow, TableCell } from "@/shared/ui/table";
 import { Button } from "@/shared/ui/button";
-import { Trash2, ArchiveRestore } from "lucide-react";
+import { TableRow, TableCell } from "@/shared/ui/table";
+import { Trash2, ArchiveX } from "lucide-react";
 
 const ArchiveItem = () => {
   return (
-    <TableRow className="h-12">
-      <TableCell>
-        <Link to="/chat/INV001" className="text-link hover:underline">
-          INV001
+    <TableRow className="h-14">
+      <TableCell className="w-[60%] max-w-0 overflow-hidden">
+        <Link
+          to="/chat/INV001"
+          className="text-link block truncate hover:underline"
+          title="INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001"
+        >
+          INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001INV001
         </Link>
       </TableCell>
-      <TableCell>2025-06-05</TableCell>
-      <TableCell>
+      <TableCell className="w-[32%] max-w-0 truncate overflow-hidden">2025-06-05</TableCell>
+      <TableCell className="w-[8%]">
         <div className="flex items-center justify-center gap-1">
           <TooltipContainer message="보관 취소" side="top">
             <Button
@@ -21,7 +25,7 @@ const ArchiveItem = () => {
               aria-label="delete-model"
               className="h-4 w-4 rounded p-0 opacity-70 transition-opacity hover:opacity-100"
             >
-              <ArchiveRestore />
+              <ArchiveX />
             </Button>
           </TooltipContainer>
 

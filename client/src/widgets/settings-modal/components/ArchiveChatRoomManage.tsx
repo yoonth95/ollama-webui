@@ -29,7 +29,7 @@ const ArchiveChatRoomManage = () => {
         isCloseButton={false}
         hasOverlay={false}
         className={cn(
-          "sm:max-w-[90%] md:max-w-[70%]",
+          "sm:max-w-[90%] md:max-w-[80%]",
           "gap-0 rounded-2xl p-0",
           "dark:text-foreground text-foreground",
           "bg-background dark:bg-neutral-800",
