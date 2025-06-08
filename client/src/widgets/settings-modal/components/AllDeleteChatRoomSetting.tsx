@@ -1,11 +1,10 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { SettingAction } from "@/widgets/settings-modal/components";
 import useDeleteAllChatRoom from "@/widgets/settings-modal/queries/useDeleteAllChatRoom";
 import useChatRoomStore from "@/shared/stores/useChatRoomStore";
 
-const AllDeleteChatRoomSetting = () => {
+const AllDeleteChatRoomSetting = ({ isNowChatRoom }: { isNowChatRoom: boolean }) => {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
   const { mutate: deleteAllChatRoomMutate } = useDeleteAllChatRoom();
   const deleteAllChatRooms = useChatRoomStore((state) => state.deleteAllChatRooms);
 
@@ -15,7 +14,7 @@ const AllDeleteChatRoomSetting = () => {
       {
         onSuccess: () => {
           deleteAllChatRooms();
-          if (pathname.includes("/chat/")) navigate("/");
+          if (isNowChatRoom) navigate("/");
         },
       },
     );
