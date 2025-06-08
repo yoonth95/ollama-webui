@@ -11,7 +11,7 @@ from app.services.chat import ChatService
 from app.utils.response import create_response
 from app.utils.handle_exceptions import handle_exceptions
 from app.utils.memory_pubsub import memory_pubsub
-from app.schemas.room import RoomCreateRequest, RoomRenameRequest
+from app.schemas.room import RoomCreateRequest, RoomRenameRequest, RoomIdRequest
 from app.schemas.chat import ChatUserMessageType
 import logging
 
@@ -151,26 +151,26 @@ async def update_room_title(request: RoomRenameRequest, db: Session = Depends(ge
 
   return JSONResponse(content=create_response(True, "채팅방 이름 변경 성공", None), status_code=200)
 
-@router.patch("/room/archive-room/{room_id}")
+@router.patch("/room/archive-room")
 @handle_exceptions
-async def archive_room(room_id: str, db: Session = Depends(get_db)):
+async def archive_room(request: RoomIdRequest, db: Session = Depends(get_db)):
   """채팅방 보관"""
   logger.info(f"📩 클라이언트 채팅방 보관")
   
-  success = await RoomService.archive_room_service(db, room_id)
+  success = await RoomService.archive_room_service(db, request.room_id)
   
   if not success:
     return JSONResponse(content=create_response(False, "채팅방을 찾을 수 없습니다.", None), status_code=404)
 
   return JSONResponse(content=create_response(True, "채팅방 보관 성공", None), status_code=200)
 
-@router.patch("/room/unarchive-room/{room_id}")
+@router.patch("/room/unarchive-room")
 @handle_exceptions
-async def unarchive_room(room_id: str, db: Session = Depends(get_db)):
+async def unarchive_room(request: RoomIdRequest, db: Session = Depends(get_db)):
   """채팅방 복구"""
   logger.info(f"📩 클라이언트 채팅방 복구")
   
-  success = await RoomService.unarchive_room_service(db, room_id)
+  success = await RoomService.unarchive_room_service(db, request.room_id)
   
   if not success:
     return JSONResponse(content=create_response(False, "채팅방을 찾을 수 없습니다.", None), status_code=404)
@@ -185,7 +185,7 @@ async def archive_all_rooms(db: Session = Depends(get_db)):
   
   await RoomService.archive_all_rooms_service(db)
 
-  return JSONResponse(content=create_response(True, "모든 채팅방 보관 성공", None), status_code=200)
+  return JSONResponse(content=create_response(True, "모든 채팅을 성공적으로 보관했습니다. 설정에서 보관된 채팅을 보실 수 있습니다.", None), status_code=200)
 
 @router.get("/room/stream-title/{room_id}")
 async def stream_room_title(room_id: str, request: Request):

@@ -4,6 +4,9 @@ from typing import List, Optional
 from app.schemas.base import TimeModelMixin
 from app.schemas.chat import ImageData
 
+class RoomIdRequest(BaseModel):
+  room_id: str
+
 class RoomCreateRequest(BaseModel):
   model: str
   content: str
