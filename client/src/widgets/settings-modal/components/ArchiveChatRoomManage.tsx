@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 import ArchiveManageContent from "@/widgets/settings-modal/components/archive-manage/ArchiveManageContent";
-import { cn } from "@/shared/lib/utils";
-import { useDialogVisibility } from "@/shared/stores/dialogVisibility";
-import { Dialog, DialogContent, DialogHeader, DialogClose, DialogTitle, DialogTrigger } from "@/shared/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogClose,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/shared/ui/dialog";
 import { Separator } from "@/shared/ui/separator";
 import { Button } from "@/shared/ui/button";
+import { useDialogVisibility } from "@/shared/stores/dialogVisibility";
+import { cn } from "@/shared/lib/utils";
 import { XIcon } from "lucide-react";
 
 const ArchiveChatRoomManage = () => {
@@ -37,7 +45,10 @@ const ArchiveChatRoomManage = () => {
         )}
       >
         <DialogHeader className="flex flex-row items-center justify-between px-6 py-8">
-          <DialogTitle>보관된 채팅</DialogTitle>
+          <div>
+            <DialogTitle>보관된 채팅</DialogTitle>
+            <DialogDescription />
+          </div>
           <DialogClose
             onClick={() => setShowConfirmDialog(false)}
             className="cursor-pointer opacity-70 transition-opacity hover:opacity-100 [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
