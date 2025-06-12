@@ -21,6 +21,10 @@ export const UpdateChatRoomTitleRequestSchema = z.object({
   newTitle: z.string(),
 });
 
+export const ChatRoomIdRequestSchema = z.object({
+  roomId: z.string(),
+});
+
 export const ChatRoomInfiniteSchema = z.object({
   items: z.array(ChatRoomSchema),
   meta: z.object({
@@ -34,4 +38,5 @@ export const ChatRoomInfiniteSchema = z.object({
 export type ChatRoomType = z.infer<typeof ChatRoomSchema>;
 export type CreateChatRoomRequestType = z.infer<typeof CreateChatRoomRequestSchema>;
 export type UpdateChatRoomTitleRequestType = z.infer<typeof UpdateChatRoomTitleRequestSchema>;
+export type ChatRoomIdRequestType = z.infer<typeof ChatRoomIdRequestSchema>;
 export type ChatRoomInfiniteType = z.infer<typeof ChatRoomInfiniteSchema>;

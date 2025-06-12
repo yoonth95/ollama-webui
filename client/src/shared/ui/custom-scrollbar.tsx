@@ -19,8 +19,8 @@ export function CustomScrollbar({
       className={cn(
         "themed-scrollbar relative",
         {
-          "overflow-y-scroll": orientation === "vertical" || orientation === "both",
-          "overflow-x-scroll": orientation === "horizontal" || orientation === "both",
+          "overflow-y-auto": orientation === "vertical" || orientation === "both",
+          "overflow-x-auto": orientation === "horizontal" || orientation === "both",
           "overflow-hidden": orientation !== "both" && orientation !== "vertical" && orientation !== "horizontal",
         },
         className,

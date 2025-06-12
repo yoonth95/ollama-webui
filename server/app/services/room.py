@@ -45,6 +45,15 @@ class RoomService:
       "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"]],
       "meta": result["meta"]
     }
+
+  @staticmethod
+  async def get_archived_rooms_service(db: Session, page: int, limit: int) -> RoomListResponse:
+    """보관된 채팅방 목록 조회"""
+    result = RoomCrud.get_archived_rooms(db, page, limit)
+    return {
+      "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"]],
+      "meta": result["meta"]
+    }
   
   @staticmethod
   async def delete_room_service(db: Session, room_id: str) -> bool:
@@ -52,9 +61,29 @@ class RoomService:
     return RoomCrud.delete_room(db, room_id)
     
   @staticmethod
+  async def delete_all_rooms_service(db: Session) -> bool:
+    """모든 채팅방 삭제"""
+    return RoomCrud.delete_all_rooms(db)
+    
+  @staticmethod
   async def update_room_title_service(db: Session, room_id: str, new_title: str) -> bool:
     """채팅방 제목 수정"""
     return RoomCrud.update_room_title(db, room_id, new_title)
+
+  @staticmethod
+  async def archive_room_service(db: Session, room_id: str) -> bool:
+    """채팅방 보관"""
+    return RoomCrud.archive_room(db, room_id)
+
+  @staticmethod
+  async def unarchive_room_service(db: Session, room_id: str) -> bool:
+    """채팅방 복구"""
+    return RoomCrud.unarchive_room(db, room_id)
+
+  @staticmethod
+  async def archive_all_rooms_service(db: Session) -> bool:
+    """모든 채팅방 보관"""
+    return RoomCrud.archive_all_rooms(db)
 
   @staticmethod
   async def generate_and_update_title(room_id: str, user_message: str, model: str):

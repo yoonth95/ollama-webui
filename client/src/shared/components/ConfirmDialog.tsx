@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  hasOverlay?: boolean;
   confirmText?: string;
   cancelText?: string;
   confirmColor?: string;
@@ -26,13 +27,14 @@ const ConfirmDialog = ({
   open,
   onOpenChange,
   onConfirm,
+  hasOverlay = true,
   confirmText = "확인",
   cancelText = "취소",
   confirmColor = "bg-red-500 hover:bg-red-600 dark:bg-red-500 hover:dark:bg-red-600",
 }: ConfirmDialogProps) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent hasOverlay={hasOverlay} className="dark:bg-neutral-800">
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>

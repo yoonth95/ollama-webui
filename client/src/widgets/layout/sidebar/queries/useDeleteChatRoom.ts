@@ -1,18 +1,13 @@
-import { z } from "zod";
 import { queryKeys, useCustomMutation } from "@/shared/api";
-
-const deleteChatRoomSchema = z.object({
-  roomId: z.string(),
-});
-type DeleteChatRoomParams = z.infer<typeof deleteChatRoomSchema>;
+import { ChatRoomIdRequestSchema, ChatRoomIdRequestType } from "@/shared/types/chatRoomType";
 
 const useDeleteChatRoom = () => {
-  return useCustomMutation<undefined, undefined, DeleteChatRoomParams>({
+  return useCustomMutation<undefined, undefined, ChatRoomIdRequestType>({
     endpoint: (params) => `/room/delete-room/${params?.roomId}`,
     method: "DELETE",
-    paramsSchema: deleteChatRoomSchema,
+    paramsSchema: ChatRoomIdRequestSchema,
     showToastOnSuccess: true,
-    queryKeyToInvalidate: queryKeys.rooms.list(),
+    queryKeyToRemove: queryKeys.rooms.list(),
   });
 };
 

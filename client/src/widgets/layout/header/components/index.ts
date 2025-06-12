@@ -8,6 +8,7 @@ import CancelModelButton from "./CancelModelButton";
 import DeleteModelButton from "./DeleteModelButton";
 import MobileDropdownMenu from "./MobileDropdownMenu";
 import DesktopDropdownMenu from "./DesktopDropdownMenu";
+import EnvironmentButton from "./EnvironmentButton";
 
 export {
   ErrorDisplay,
@@ -20,4 +21,5 @@ export {
   DeleteModelButton,
   MobileDropdownMenu,
   DesktopDropdownMenu,
+  EnvironmentButton,
 };

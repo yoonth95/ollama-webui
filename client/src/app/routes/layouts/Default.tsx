@@ -1,25 +1,23 @@
 import { useCallback } from "react";
 import { Outlet } from "react-router-dom";
 import { useCookies } from "react-cookie";
-import { SidebarProvider } from "@/shared/ui/sidebar";
+import { MainDropzone } from "@/features/dropzone/MainDropzone";
 import AppSidebar from "@/widgets/layout/sidebar/AppSidebar";
 import Header from "@/widgets/layout/header/Header";
-import { MainDropzone } from "@/features/dropzone/MainDropzone";
+import { SidebarProvider } from "@/shared/ui/sidebar";
 import { useLocationChange } from "@/shared/hooks/useLocationChange";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 
 export default function DefaultLayout() {
   const [cookies] = useCookies(["sidebar"]);
-  const defaultOpen = cookies?.sidebar === true;
+  const defaultOpen = cookies?.sidebar !== false;
   const deactivateOptimisticUI = useChatOptimisticStore((state) => state.deactivateOptimisticUI);
 
   // 경로 변경 감지 콜백
   const handleRouteChange = useCallback(
     (currentPath: string) => {
       // 홈 페이지로 이동 시 Optimistic UI 상태 초기화
-      if (currentPath === "/") {
-        deactivateOptimisticUI();
-      }
+      if (currentPath === "/") deactivateOptimisticUI();
     },
     [deactivateOptimisticUI],
   );
