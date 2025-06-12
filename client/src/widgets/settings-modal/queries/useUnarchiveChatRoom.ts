@@ -1,15 +1,13 @@
 import { queryKeys, useCustomMutation } from "@/shared/api";
 import { ChatRoomIdRequestSchema, ChatRoomIdRequestType } from "@/shared/types/chatRoomType";
 
-const useArchiveChatRoom = () => {
+const useUnarchiveChatRoom = () => {
   return useCustomMutation<undefined, ChatRoomIdRequestType>({
-    endpoint: `/room/archive-room`,
+    endpoint: `/room/unarchive-room`,
     method: "PATCH",
     requestSchema: ChatRoomIdRequestSchema,
-    showToastOnSuccess: true,
-    queryKeyToInvalidate: queryKeys.rooms.archived(),
     queryKeyToRemove: queryKeys.rooms.list(),
   });
 };
 
-export default useArchiveChatRoom;
+export default useUnarchiveChatRoom;
