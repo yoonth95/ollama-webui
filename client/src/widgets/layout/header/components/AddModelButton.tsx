@@ -1,7 +1,7 @@
-import { Button } from "@/shared/ui/button";
 import { CancelModelButton } from "@/widgets/layout/header/components";
 import { useModelDownloadHandler } from "@/widgets/layout/header/hooks";
-import { LoaderCircle } from "lucide-react";
+import { Button } from "@/shared/ui/button";
+import Loader from "@/shared/ui/loader";
 
 interface AddModelButtonProps {
   inputValue: string;
@@ -17,13 +17,13 @@ export default function AddModelButton({ inputValue, setInputValue }: AddModelBu
   return (
     <div>
       {!isPending ? (
-        <div className="relative flex-1 overflow-x-auto whitespace-nowrap scrollbar-hidden">
+        <div className="scrollbar-hidden relative flex-1 overflow-x-auto whitespace-nowrap">
           <Button
             variant="ghost"
             aria-label="model-download"
             onClick={handleDownload}
             disabled={isPending}
-            className="w-full justify-start px-3 py-2 text-foreground dark:hover:bg-neutral-700/50 gap-0"
+            className="text-foreground w-full justify-start gap-0 px-3 py-2 dark:hover:bg-neutral-700/50"
           >
             <span>Ollama.com에서 &quot;</span>
             <span className="truncate">{inputValue}</span>
@@ -35,14 +35,14 @@ export default function AddModelButton({ inputValue, setInputValue }: AddModelBu
           <div className="flex flex-col">
             <div className="flex items-center">
               <span className="w-7">
-                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <Loader size="sm" />
               </span>
               <span className="w-[350px] text-sm font-medium">
                 Downloading &quot;{downloadProgress?.model_name}&quot; ({downloadProgress?.progress}%)
               </span>
               <CancelModelButton model_name={downloadProgress?.model_name} />
             </div>
-            <p className="ml-7 w-[350px] truncate pr-3 text-xs text-secondary-foreground">{downloadProgress?.digest}</p>
+            <p className="text-secondary-foreground ml-7 w-[350px] truncate pr-3 text-xs">{downloadProgress?.digest}</p>
           </div>
         </div>
       )}

@@ -9,7 +9,8 @@ import { cn } from "@/shared/lib/utils";
 import { useGetModels } from "@/widgets/layout/header/queries";
 import { ErrorDisplay, HeaderDropdownMenu, EnvironmentButton } from "@/widgets/layout/header/components";
 import { DisplayType } from "@/shared/types/apiType";
-import { ChevronDown, LoaderCircle } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import Loader from "@/shared/ui/loader";
 
 const Header = () => {
   const { open } = useSidebar();
@@ -49,7 +50,7 @@ const Header = () => {
           >
             {isLoading ? (
               <div className="flex h-[7.5rem] items-center justify-center">
-                <LoaderCircle className="animate-spin" />
+                <Loader />
               </div>
             ) : (
               <>

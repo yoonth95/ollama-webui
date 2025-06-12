@@ -2,7 +2,7 @@ import { ArchiveItem, ArchiveLoader } from "./index";
 import { useGetArchiveChatRooms } from "@/widgets/settings-modal/queries/useGetArchiveChatRooms";
 import { useChatRoomInfiniteScroll } from "@/widgets/layout/sidebar/hooks";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
-import { LoaderCircle } from "lucide-react";
+import Loader from "@/shared/ui/loader";
 
 const ArchiveManageContent = () => {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useGetArchiveChatRooms();
@@ -19,7 +19,7 @@ const ArchiveManageContent = () => {
   });
 
   return isLoading ? (
-    <LoaderCircle className="h-6 w-6 animate-spin" />
+    <Loader size="md" />
   ) : (
     <Table containerClassName="themed-scrollbar max-h-[25rem] pr-2">
       <TableHeader>
