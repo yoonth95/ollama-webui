@@ -1,8 +1,26 @@
-import ArchiveItem from "./ArchiveItem";
+import { ArchiveItem, ArchiveLoader } from "./index";
+import { useGetArchiveChatRooms } from "@/widgets/settings-modal/queries/useGetArchiveChatRooms";
+import { useChatRoomInfiniteScroll } from "@/widgets/layout/sidebar/hooks";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
+import { LoaderCircle } from "lucide-react";
 
 const ArchiveManageContent = () => {
-  return (
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useGetArchiveChatRooms();
+
+  const {
+    loaderRef,
+    hasMoreData,
+    isLoading: isLoadingMore,
+  } = useChatRoomInfiniteScroll({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    onFetchSuccess: () => {},
+  });
+
+  return isLoading ? (
+    <LoaderCircle className="h-6 w-6 animate-spin" />
+  ) : (
     <Table containerClassName="themed-scrollbar max-h-[25rem] pr-2">
       <TableHeader>
         <TableRow className="bg-background sticky top-0 z-10 text-base font-extrabold dark:bg-neutral-800">
@@ -12,26 +30,8 @@ const ArchiveManageContent = () => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
-        <ArchiveItem />
+        {data?.map((item) => <ArchiveItem key={item.id} item={item} />)}
+        {(hasMoreData || isLoadingMore) && <ArchiveLoader loaderRef={loaderRef} />}
       </TableBody>
     </Table>
   );

@@ -5,7 +5,7 @@ import { ChatRoomInfiniteSchema, ChatRoomInfiniteType } from "@/shared/types/cha
 export const useGetArchiveChatRooms = () => {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } =
     useCustomInfiniteQuery<ChatRoomInfiniteType>({
-      queryKey: queryKeys.rooms.list(),
+      queryKey: queryKeys.rooms.archived(),
       endpoint: "/room/get-archived-rooms",
       schema: ChatRoomInfiniteSchema,
       options: { refetchOnWindowFocus: true },
