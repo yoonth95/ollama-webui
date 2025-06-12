@@ -4,7 +4,8 @@ import { Button } from "@/shared/ui/button";
 import { TooltipContainer } from "@/shared/components";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
-import { CircleStop, LoaderCircle, Send } from "lucide-react";
+import { CircleStop, Send } from "lucide-react";
+import Loader from "@/shared/ui/loader";
 
 interface ChatSendButtonPropsType {
   chatRoomId: string;
@@ -48,7 +49,7 @@ const ChatSendButton = ({ chatRoomId, hasValidContent, isPending, onSubmit }: Ch
             onClick={onSubmit}
             disabled={isStartSSE || isPending || hasNoContent} // sse 수신 중이거나, 채팅방 생성 중이거나, 입력 내용이 없으면 비활성화
           >
-            {showLoader ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {showLoader ? <Loader size="sm" /> : <Send className="h-4 w-4" />}
           </Button>
         </TooltipContainer>
       )}

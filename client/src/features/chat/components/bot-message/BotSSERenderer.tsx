@@ -2,7 +2,7 @@ import { BotMessageError, BotMessageLayout, BotMessageHeader } from "@/features/
 import { SSEChatDataType } from "@/features/chat/types/sseChatDataType";
 import { useSSEEventSourceStore } from "@/shared/stores/useSSEEventSourceStore";
 import { ChatMessageType } from "@/shared/types/chatMessageType";
-import { LoaderCircle } from "lucide-react";
+import Loader from "@/shared/ui/loader";
 
 interface BotSSERendererPropsType {
   answerData?: ChatMessageType;
@@ -38,7 +38,7 @@ const BotSSERenderer = ({ answerData, index = 0, sseData, roomId, type }: BotSSE
   if (isStartSSE && !sseData.content) {
     return (
       <div key={answerData?.id || `bot-loading-${index}`} className="py-2">
-        <LoaderCircle className="h-6 w-6 animate-spin" />
+        <Loader size="md" />
       </div>
     );
   }
@@ -64,7 +64,7 @@ const BotSSERenderer = ({ answerData, index = 0, sseData, roomId, type }: BotSSE
 
   return (
     <div key={answerData?.id || `bot-initial-loading-${index}`} className="py-2">
-      <LoaderCircle className="h-6 w-6 animate-spin" />
+      <Loader size="md" />
     </div>
   );
 };

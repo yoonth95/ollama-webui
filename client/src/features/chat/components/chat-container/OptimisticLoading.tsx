@@ -1,7 +1,7 @@
 import { useShallow } from "zustand/shallow";
 import { UserMessageBox } from "@/features/chat/components";
 import { useChatOptimisticStore } from "@/shared/stores/useChatOptimisticStore";
-import { LoaderCircle } from "lucide-react";
+import Loader from "@/shared/ui/loader";
 
 /**
  * 홈 페이지 Optimistic UI
@@ -27,7 +27,7 @@ const OptimisticLoading = () => {
 
       {isCreateRoomLoading && (
         <div className="py-2">
-          <LoaderCircle className="h-6 w-6 animate-spin" />
+          <Loader size="md" />
         </div>
       )}
     </>

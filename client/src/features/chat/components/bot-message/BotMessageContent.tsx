@@ -1,5 +1,5 @@
 import MarkdownViewer from "@/features/markdown/MarkdownViewer";
-import { LoaderCircle } from "lucide-react";
+import Loader from "@/shared/ui/loader";
 
 const BotMessageContent = ({
   isRetry,
@@ -18,7 +18,7 @@ const BotMessageContent = ({
   if (shouldShowContent) {
     return (
       <div className="flex items-center py-2">
-        {isRetry && <LoaderCircle className="h-5 w-5 animate-spin" />}
+        {isRetry && <Loader size="sm" />}
         <div className="px-2 break-words">
           <MarkdownViewer content={mainContent} />
         </div>
