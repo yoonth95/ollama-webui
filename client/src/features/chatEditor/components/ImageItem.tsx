@@ -37,7 +37,7 @@ const ImageItem = ({ image }: { image: ImageItemType }) => {
       </DialogTrigger>
 
       <DialogContent
-        className="gap-0 border-none bg-transparent"
+        className="gap-0 border-none bg-transparent outline-none"
         isCloseButton={false}
         style={{ maxWidth: "none" }}
         onClick={() => setIsOpen(false)}
