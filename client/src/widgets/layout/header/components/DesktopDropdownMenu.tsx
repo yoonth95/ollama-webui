@@ -14,7 +14,7 @@ const DesktopDropdownMenu = ({ category, models, sideOffset }: DesktopDropdownMe
     <DropdownMenuSubTrigger className="px-4 py-2">
       <span>{category}</span>
     </DropdownMenuSubTrigger>
-    <DropdownMenuSubContent className="p-2" sideOffset={sideOffset} alignOffset={20}>
+    <DropdownMenuSubContent className="p-2" sideOffset={sideOffset}>
       <CustomScrollbar className="max-h-[15rem] overflow-y-auto" width="22rem">
         {models.map((model) => (
           <SubMenuItem key={model.model} model={model} />
