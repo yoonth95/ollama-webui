@@ -20,6 +20,10 @@ export interface LoaderProps extends HTMLAttributes<HTMLElement> {
    */
   size?: "sm" | "md" | "lg";
   /**
+   * 로더의 위치
+   */
+  location?: "center" | "left" | "right";
+  /**
    * 테이블 행 변형에서 사용할 colSpan 값
    * @default 3
    */
@@ -30,7 +34,15 @@ export interface LoaderProps extends HTMLAttributes<HTMLElement> {
  * 다양한 컨텍스트에서 사용할 수 있는 로딩 애니메이션 컴포넌트
  * div 형태(일반 컨테이너)와 table-row 형태(테이블 내부)를 지원
  */
-const Loader = ({ loaderRef, variant = "div", size = "md", colSpan = 3, className, ...props }: LoaderProps) => {
+const Loader = ({
+  loaderRef,
+  variant = "div",
+  size = "md",
+  location = "center",
+  colSpan = 3,
+  className,
+  ...props
+}: LoaderProps) => {
   const sizeMap = {
     sm: "h-4 w-4",
     md: "h-6 w-6",
@@ -52,7 +64,13 @@ const Loader = ({ loaderRef, variant = "div", size = "md", colSpan = 3, classNam
   return (
     <div
       ref={loaderRef}
-      className={cn("text-muted-foreground flex min-h-9 items-center justify-center text-sm", className)}
+      className={cn(
+        "text-muted-foreground flex min-h-9 items-center text-sm",
+        location === "center" && "justify-center",
+        location === "left" && "justify-start",
+        location === "right" && "justify-end",
+        className,
+      )}
       {...props}
     >
       <LoaderCircle className={loaderIconClasses} />

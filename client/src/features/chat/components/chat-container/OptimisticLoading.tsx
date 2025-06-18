@@ -27,7 +27,7 @@ const OptimisticLoading = () => {
 
       {isCreateRoomLoading && (
         <div className="py-2">
-          <Loader size="md" />
+          <Loader size="md" location="left" />
         </div>
       )}
     </>

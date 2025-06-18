@@ -18,7 +18,7 @@ const BotMessageContent = ({
   if (shouldShowContent) {
     return (
       <div className="flex items-center py-2">
-        {isRetry && <Loader size="sm" />}
+        {isRetry && <Loader size="sm" location="left" />}
         <div className="px-2 break-words">
           <MarkdownViewer content={mainContent} />
         </div>
