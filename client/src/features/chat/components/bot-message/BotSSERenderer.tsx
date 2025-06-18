@@ -38,7 +38,7 @@ const BotSSERenderer = ({ answerData, index = 0, sseData, roomId, type }: BotSSE
   if (isStartSSE && !sseData.content) {
     return (
       <div key={answerData?.id || `bot-loading-${index}`} className="py-2">
-        <Loader size="md" />
+        <Loader size="md" location="left" />
       </div>
     );
   }
@@ -64,7 +64,7 @@ const BotSSERenderer = ({ answerData, index = 0, sseData, roomId, type }: BotSSE
 
   return (
     <div key={answerData?.id || `bot-initial-loading-${index}`} className="py-2">
-      <Loader size="md" />
+      <Loader size="md" location="left" />
     </div>
   );
 };
