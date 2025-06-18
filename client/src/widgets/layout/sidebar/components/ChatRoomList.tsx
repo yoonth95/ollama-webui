@@ -14,7 +14,7 @@ const ChatRoomList = () => {
     isLoading,
     isError,
     refetch,
-  } = useGetChatRooms(DisplayType.Toast);
+  } = useGetChatRooms(DisplayType.Display);
 
   const [chatRooms, addChatRooms] = useChatRoomStore(useShallow((state) => [state.chatRooms, state.addChatRooms]));
 
