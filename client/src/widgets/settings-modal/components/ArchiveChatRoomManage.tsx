@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useShallow } from "zustand/shallow";
 import ArchiveManageContent from "@/widgets/settings-modal/components/archive-manage/ArchiveManageContent";
 import {
   Dialog,
@@ -11,20 +11,28 @@ import {
 } from "@/shared/ui/dialog";
 import { Separator } from "@/shared/ui/separator";
 import { Button } from "@/shared/ui/button";
-import { useDialogVisibility } from "@/shared/stores/dialogVisibility";
+import { useModalStore } from "@/shared/stores/useModalStore";
 import { cn } from "@/shared/lib/utils";
 import { XIcon } from "lucide-react";
 
 const ArchiveChatRoomManage = () => {
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const setSettingsVisible = useDialogVisibility((value) => value.setSettingsVisible);
+  const id = "archive-manage";
 
-  useEffect(() => {
-    setSettingsVisible(!showConfirmDialog);
-  }, [showConfirmDialog, setSettingsVisible]);
+  const { open, closeCurrent, isOpen } = useModalStore(
+    useShallow((state) => ({
+      open: state.open,
+      closeCurrent: state.closeCurrent,
+      isOpen: state.isOpen(id),
+    })),
+  );
+
+  const handleOpenChange = (openState: boolean) => {
+    if (openState) open({ id, type: "dialog" });
+    else closeCurrent();
+  };
 
   return (
-    <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -50,7 +58,7 @@ const ArchiveChatRoomManage = () => {
             <DialogDescription />
           </div>
           <DialogClose
-            onClick={() => setShowConfirmDialog(false)}
+            onClick={() => closeCurrent()}
             className="cursor-pointer opacity-70 transition-opacity hover:opacity-100 [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />

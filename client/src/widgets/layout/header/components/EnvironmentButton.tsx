@@ -1,16 +1,29 @@
+import { useShallow } from "zustand/shallow";
 import SettingContent from "@/widgets/settings-modal/SettingContent";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/ui/dialog";
 import { Separator } from "@/shared/ui/separator";
-import { useDialogVisibility } from "@/shared/stores/dialogVisibility";
+import { useModalStore } from "@/shared/stores/useModalStore";
 import { Settings } from "lucide-react";
 
 const EnvironmentButton = () => {
-  const isSettingsVisible = useDialogVisibility((value) => value.isSettingsVisible);
+  const { open, closeById, isTop, isOpen } = useModalStore(
+    useShallow((state) => ({
+      open: state.open,
+      closeById: state.closeById,
+      isTop: state.isOpen("settings"),
+      isOpen: state.has("settings"),
+    })),
+  );
+
+  const handleOpenChange = (openState: boolean) => {
+    if (openState) open({ id: "settings", type: "dialog" });
+    else closeById("settings");
+  };
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="ghost" aria-label="dropdown" className="p-0 text-lg">
           <Settings />
@@ -21,7 +34,7 @@ const EnvironmentButton = () => {
           "gap-0 rounded-2xl p-0",
           "dark:text-foreground text-foreground",
           "bg-background dark:bg-neutral-800",
-          isSettingsVisible ? "block" : "hidden",
+          !isTop && "hidden",
         )}
       >
         <DialogHeader className="flex flex-row items-center justify-between p-4">
