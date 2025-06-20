@@ -18,10 +18,12 @@ const ArchiveManageContent = () => {
     onFetchSuccess: () => {},
   });
 
-  return isLoading ? (
-    <Loader size="md" />
+  if (isLoading) return <Loader size="md" />;
+
+  return data?.length === 0 ? (
+    <div className="flex min-h-[20rem] items-center justify-center">보관된 채팅방이 없습니다.</div>
   ) : (
-    <Table containerClassName="themed-scrollbar max-h-[25rem] pr-2">
+    <Table containerClassName="themed-scrollbar min-h-[20rem] max-h-[25rem] pr-2">
       <TableHeader>
         <TableRow className="bg-background sticky top-0 z-10 text-base font-extrabold dark:bg-neutral-800">
           <TableHead className="w-[60%]">채팅방</TableHead>
