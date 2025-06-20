@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useShallow } from "zustand/shallow";
 import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/components";
-import { useDialogVisibility } from "@/shared/stores/dialogVisibility";
+import { useModalStore } from "@/shared/stores/useModalStore";
 import { cn } from "@/shared/lib/utils";
 
 export type SettingActionType = "archive" | "delete";
@@ -27,16 +27,24 @@ const SettingAction = ({
   confirmColor,
   onAction,
 }: SettingActionPropsType) => {
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const setSettingsVisible = useDialogVisibility((value) => value.setSettingsVisible);
+  const id = title.replace(/\s+/g, "-").toLowerCase();
 
-  useEffect(() => {
-    setSettingsVisible(!showConfirmDialog);
-  }, [showConfirmDialog, setSettingsVisible]);
+  const { open, closeCurrent, isOpen } = useModalStore(
+    useShallow((state) => ({
+      open: state.open,
+      closeCurrent: state.closeCurrent,
+      isOpen: state.isOpen(id),
+    })),
+  );
+
+  const handleOpenChange = (openState: boolean) => {
+    if (openState) open({ id, type: "alert" });
+    else closeCurrent();
+  };
 
   const handleAction = () => {
     onAction();
-    setShowConfirmDialog(false);
+    closeCurrent();
   };
 
   const defaultButtonClass =
@@ -51,14 +59,14 @@ const SettingAction = ({
 
   return (
     <>
-      <Button variant="outline" className={cn(getButtonClassName())} onClick={() => setShowConfirmDialog(true)}>
+      <Button variant="outline" className={cn(getButtonClassName())} onClick={() => open({ id, type: "alert" })}>
         <span>{buttonText}</span>
       </Button>
       <ConfirmDialog
         title={title}
         description={description}
-        open={showConfirmDialog}
-        onOpenChange={setShowConfirmDialog}
+        open={isOpen}
+        onOpenChange={handleOpenChange}
         hasOverlay={false}
         onConfirm={handleAction}
         confirmText={confirmText}
