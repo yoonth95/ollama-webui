@@ -1,17 +1,25 @@
 import { Link } from "react-router-dom";
-import { TableRow, TableCell } from "@/shared/ui/table";
-import { ChatRoomType } from "@/shared/types/chatRoomType";
 import { ArchiveCancelButton, RoomDeleteButton } from "./index";
+import { TableRow, TableCell } from "@/shared/ui/table";
+import { useModalStore } from "@/shared/stores/useModalStore";
+import { ChatRoomType } from "@/shared/types/chatRoomType";
 
 interface ArchiveItemProps {
   item: ChatRoomType;
 }
 
 const ArchiveItem = ({ item }: ArchiveItemProps) => {
+  const clear = useModalStore((state) => state.clear);
+
   return (
     <TableRow className="h-14">
       <TableCell className="w-[60%] max-w-0 overflow-hidden">
-        <Link to={`/chat/${item.id}`} className="text-link block truncate hover:underline" title={item.title}>
+        <Link
+          to={`/chat/${item.id}`}
+          onClick={() => clear()}
+          className="text-link block truncate hover:underline"
+          title={item.title}
+        >
           {item.title}
         </Link>
       </TableCell>
