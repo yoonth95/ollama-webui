@@ -1,12 +1,27 @@
-import { useState } from "react";
-import { Button } from "@/shared/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/shared/ui/dialog";
+import { useShallow } from "zustand/shallow";
 import { ImageItemType, useEditorImageStore } from "@/features/chatEditor/stores/EditorImageStore";
+import { Button } from "@/shared/ui/button";
+import { Dialog, DialogTrigger } from "@/shared/ui/dialog";
+import { ImgDialogContent } from "@/shared/components";
+import { useModalStore } from "@/shared/stores/useModalStore";
 import { X } from "lucide-react";
 
 const ImageItem = ({ image }: { image: ImageItemType }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const id = `editor-image-${image.id}`;
+
   const removeImage = useEditorImageStore((state) => state.removeImage);
+  const { open, closeCurrent, isOpen } = useModalStore(
+    useShallow((state) => ({
+      open: state.open,
+      closeCurrent: state.closeCurrent,
+      isOpen: state.isOpen(id),
+    })),
+  );
+
+  const handleOpenChange = (openState: boolean) => {
+    if (openState) open({ id, type: "dialog" });
+    else closeCurrent();
+  };
 
   const handleImgDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -14,7 +29,7 @@ const ImageItem = ({ image }: { image: ImageItemType }) => {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <div className="dark:bg-card bg-accent hover:bg-border border-input flex cursor-pointer items-center gap-3 rounded-lg border transition-colors duration-200 hover:dark:bg-[#1e1e1e]">
           <img
@@ -36,22 +51,7 @@ const ImageItem = ({ image }: { image: ImageItemType }) => {
         </div>
       </DialogTrigger>
 
-      <DialogContent
-        className="gap-0 border-none bg-transparent outline-none"
-        isCloseButton={false}
-        style={{ maxWidth: "none" }}
-        onClick={() => setIsOpen(false)}
-      >
-        <DialogTitle />
-        <DialogDescription />
-        <div className="flex h-full w-full items-center justify-center">
-          <img
-            src={image.url}
-            alt="이미지 미리보기"
-            className="max-h-[calc(100vh-10rem)] cursor-pointer rounded-xl object-contain shadow lg:w-fit"
-          />
-        </div>
-      </DialogContent>
+      <ImgDialogContent imageSrc={image.url} closeCurrent={closeCurrent} />
     </Dialog>
   );
 };
