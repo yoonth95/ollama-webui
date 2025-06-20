@@ -2,10 +2,13 @@ import { useShallow } from "zustand/shallow";
 import { ChatRoomGroup, ChatRoomLoader, SidebarError, ChatRoomSkeleton } from "@/widgets/layout/sidebar/components";
 import { useChatRoomInfiniteScroll } from "@/widgets/layout/sidebar/hooks";
 import { useGetChatRooms } from "@/widgets/layout/sidebar/queries";
+import useIsFirstMount from "@/shared/hooks/useIsFirstMount";
 import useChatRoomStore from "@/shared/stores/useChatRoomStore";
 import { DisplayType } from "@/shared/types/apiType";
 
 const ChatRoomList = () => {
+  const isFirstMount = useIsFirstMount();
+
   const {
     data: chatRoomsData,
     fetchNextPage,
@@ -29,7 +32,7 @@ const ChatRoomList = () => {
     onFetchSuccess: addChatRooms,
   });
 
-  if (isLoading || (chatRoomsData?.length > 0 && chatRooms.length === 0)) return <ChatRoomSkeleton />;
+  if (isFirstMount && (isLoading || (chatRoomsData?.length > 0 && chatRooms.length === 0))) return <ChatRoomSkeleton />;
   if (isError) return <SidebarError refetch={refetch} />;
 
   return (

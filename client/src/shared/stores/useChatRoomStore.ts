@@ -35,7 +35,10 @@ const useChatRoomStore = create<useChatRoomStoreType>((set) => ({
       const exists = state.chatRooms.some((existingRoom) => existingRoom.id === room.id);
       if (exists) return state;
 
-      return { chatRooms: [room, ...state.chatRooms] };
+      const newList = [...state.chatRooms, room];
+      const sortedList = newList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      return { chatRooms: sortedList };
     });
   },
 
