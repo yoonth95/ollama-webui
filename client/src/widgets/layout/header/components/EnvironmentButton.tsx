@@ -1,10 +1,10 @@
 import { useShallow } from "zustand/shallow";
 import SettingContent from "@/widgets/settings-modal/SettingContent";
-import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/ui/dialog";
 import { Separator } from "@/shared/ui/separator";
 import { useModalStore } from "@/shared/stores/useModalStore";
+import { cn } from "@/shared/lib/utils";
 import { Settings } from "lucide-react";
 
 const EnvironmentButton = () => {
@@ -19,7 +19,7 @@ const EnvironmentButton = () => {
 
   const handleOpenChange = (openState: boolean) => {
     if (openState) open({ id: "settings", type: "dialog" });
-    else closeById("settings");
+    else if (isTop) closeById("settings");
   };
 
   return (
@@ -34,7 +34,7 @@ const EnvironmentButton = () => {
           "gap-0 rounded-2xl p-0",
           "dark:text-foreground text-foreground",
           "bg-background dark:bg-neutral-800",
-          !isTop && "hidden",
+          !isTop && isOpen && "hidden",
         )}
       >
         <DialogHeader className="flex flex-row items-center justify-between p-4">

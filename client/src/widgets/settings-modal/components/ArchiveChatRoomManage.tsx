@@ -43,7 +43,6 @@ const ArchiveChatRoomManage = () => {
       </DialogTrigger>
       <DialogContent
         isCloseButton={false}
-        hasOverlay={false}
         className={cn(
           "sm:max-w-[90%] md:max-w-[80%]",
           "gap-0 rounded-2xl p-0",
@@ -58,7 +57,7 @@ const ArchiveChatRoomManage = () => {
             <DialogDescription />
           </div>
           <DialogClose
-            onClick={() => closeCurrent()}
+            onClick={(e) => e.stopPropagation()}
             className="cursor-pointer opacity-70 transition-opacity hover:opacity-100 [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
           >
             <XIcon />
