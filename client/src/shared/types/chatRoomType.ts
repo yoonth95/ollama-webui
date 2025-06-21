@@ -35,8 +35,14 @@ export const ChatRoomInfiniteSchema = z.object({
   }),
 });
 
+export const GroupChatRoomSchema = z.object({
+  category: z.string(),
+  items: z.array(ChatRoomSchema),
+});
+
 export type ChatRoomType = z.infer<typeof ChatRoomSchema>;
 export type CreateChatRoomRequestType = z.infer<typeof CreateChatRoomRequestSchema>;
 export type UpdateChatRoomTitleRequestType = z.infer<typeof UpdateChatRoomTitleRequestSchema>;
 export type ChatRoomIdRequestType = z.infer<typeof ChatRoomIdRequestSchema>;
 export type ChatRoomInfiniteType = z.infer<typeof ChatRoomInfiniteSchema>;
+export type GroupChatRoomType = z.infer<typeof GroupChatRoomSchema>;
