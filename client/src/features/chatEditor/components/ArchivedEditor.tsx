@@ -1,13 +1,9 @@
-import { useQueryClient } from "@tanstack/react-query";
 import useUnarchiveChatRoom from "@/widgets/settings-modal/queries/useUnarchiveChatRoom";
 import { Button } from "@/shared/ui/button";
 import useChatRoomStore from "@/shared/stores/useChatRoomStore";
-import { queryKeys } from "@/shared/api";
-import { ApiResponseType } from "@/shared/types/apiType";
 import { ChatRoomType } from "@/shared/types/chatRoomType";
 
 const ArchivedEditor = ({ room }: { room: ChatRoomType }) => {
-  const queryClient = useQueryClient();
   const updateChatRoomArchive = useChatRoomStore((state) => state.updateChatRoomArchive);
   const unarchiveChatRoomMutation = useUnarchiveChatRoom(room.id);
 
@@ -16,16 +12,6 @@ const ArchivedEditor = ({ room }: { room: ChatRoomType }) => {
       { roomId: room.id },
       {
         onSuccess: () => {
-          queryClient.setQueryData(
-            queryKeys.rooms.detail(room.id),
-            (oldData: ApiResponseType<ChatRoomType> | undefined) => {
-              if (oldData?.data) {
-                const updatedData = { ...oldData.data, isArchived: false };
-                return { ...oldData, data: updatedData };
-              }
-              return oldData;
-            },
-          );
           updateChatRoomArchive(room.id, false);
         },
       },
