@@ -6,7 +6,9 @@ import { ChatRoomInfiniteSchema, ChatRoomInfiniteType } from "@/shared/types/cha
 import { DisplayType } from "@/shared/types/apiType";
 
 const useGetChatRooms = (type: DisplayType) => {
-  const [chatRooms, setChatRooms] = useChatRoomStore(useShallow((state) => [state.chatRooms, state.setChatRooms]));
+  const [chatRooms, setChatRooms, syncChatRooms] = useChatRoomStore(
+    useShallow((state) => [state.chatRooms, state.setChatRooms, state.syncChatRooms]),
+  );
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } =
     useCustomInfiniteQuery<ChatRoomInfiniteType>({
@@ -20,10 +22,11 @@ const useGetChatRooms = (type: DisplayType) => {
   const flatData = useMemo(() => data?.pages.flatMap((page) => page.data?.items || []) || [], [data]);
 
   useEffect(() => {
-    if (flatData.length > 0 && chatRooms.length === 0) {
-      setChatRooms(flatData);
-    }
-  }, [flatData, chatRooms, setChatRooms]);
+    if (flatData.length === 0) return;
+
+    if (chatRooms.length === 0) setChatRooms(flatData);
+    else syncChatRooms(flatData);
+  }, [flatData, chatRooms, setChatRooms, syncChatRooms]);
 
   return {
     data: flatData,

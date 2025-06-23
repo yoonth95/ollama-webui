@@ -37,7 +37,7 @@ const ChatRoomList = () => {
 
   return (
     <>
-      <ChatRoomGroup chatRooms={chatRooms} />
+      <ChatRoomGroup chatRooms={chatRooms.filter((room) => !room.isArchived)} />
       {(hasMoreData || isLoadingMore) && <ChatRoomLoader loaderRef={loaderRef} />}
     </>
   );
