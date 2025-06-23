@@ -6,6 +6,7 @@ import ChatOptionButtonContainer from "./ChatOptionButtonContainer";
 import ImageUploadButton from "./ImageUploadButton";
 import ImageContainer from "./ImageContainer";
 import ImageItem from "./ImageItem";
+import ArchivedEditor from "./ArchivedEditor";
 
 export {
   CodeBlockComponent,
@@ -16,4 +17,5 @@ export {
   ImageUploadButton,
   ImageContainer,
   ImageItem,
+  ArchivedEditor,
 };
