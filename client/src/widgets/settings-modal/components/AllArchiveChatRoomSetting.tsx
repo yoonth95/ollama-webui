@@ -6,14 +6,14 @@ import useChatRoomStore from "@/shared/stores/useChatRoomStore";
 const AllArchiveChatRoomSetting = ({ isNowChatRoom }: { isNowChatRoom: boolean }) => {
   const navigate = useNavigate();
   const { mutate: archiveAllChatRoomMutate } = useArchiveAllChatRoom();
-  const deleteAllChatRooms = useChatRoomStore((state) => state.deleteAllChatRooms);
+  const updateAllChatRoomArchive = useChatRoomStore((state) => state.updateAllChatRoomArchive);
 
   const handleArchive = () => {
     archiveAllChatRoomMutate(
       {},
       {
         onSuccess: () => {
-          deleteAllChatRooms();
+          updateAllChatRoomArchive(true);
           if (isNowChatRoom) navigate("/");
         },
       },

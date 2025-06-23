@@ -9,7 +9,10 @@ import {
 import { useMessageSubmit } from "@/features/chatEditor/hooks/useMessageSubmit";
 import { TiptapEditorRef } from "@/features/chatEditor/types/TiptapEditorType";
 
-const ChatEditorWrapper = () => {
+interface ChatEditorWrapperPropsType {
+  isChatRoomDetailLoading: boolean;
+}
+const ChatEditorWrapper = ({ isChatRoomDetailLoading }: ChatEditorWrapperPropsType) => {
   const editorRef = useRef<TiptapEditorRef | null>(null);
   const { chatRoomId = "" } = useParams<{ chatRoomId?: string }>();
   const [hasValidContent, setHasValidContent] = useState(false);
@@ -44,7 +47,7 @@ const ChatEditorWrapper = () => {
         <ChatSendButton
           chatRoomId={chatRoomId}
           hasValidContent={hasValidContent}
-          isPending={isPending}
+          isPending={isPending || isChatRoomDetailLoading}
           onSubmit={handleSubmit}
         />
       </div>

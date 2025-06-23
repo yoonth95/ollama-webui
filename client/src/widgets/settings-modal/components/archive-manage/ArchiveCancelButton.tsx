@@ -10,22 +10,15 @@ import { ArchiveX } from "lucide-react";
 
 const ArchiveCancelButton = ({ room }: { room: ChatRoomType }) => {
   const queryClient = useQueryClient();
-  const addChatRoom = useChatRoomStore((state) => state.addChatRoom);
-  const unArchiveChatRoomMutation = useUnarchiveChatRoom();
+  const updateChatRoomArchive = useChatRoomStore((state) => state.updateChatRoomArchive);
+  const unArchiveChatRoomMutation = useUnarchiveChatRoom(room.id);
 
   const handleDelete = () => {
     unArchiveChatRoomMutation.mutate(
       { roomId: room.id },
       {
         onSuccess: () => {
-          // 사이드바 스토어에 채팅방 추가
-          addChatRoom({
-            id: room.id,
-            title: room.title,
-            isArchived: false,
-            createdAt: room.createdAt,
-            updatedAt: room.updatedAt,
-          });
+          updateChatRoomArchive(room.id, false);
           removeItemFromInfiniteCache<ChatRoomType>(queryClient, queryKeys.rooms.archived(), room.id);
         },
       },

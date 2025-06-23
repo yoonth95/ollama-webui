@@ -37,8 +37,18 @@ export type UseCustomMutationType<TRes = undefined, TReq = undefined, TParams = 
   paramsSchema?: z.ZodType<TParams>;
   errorOptions?: ErrorHandlingOptions;
   showToastOnSuccess?: boolean;
-  queryKeyToInvalidate?: string[];
-  queryKeyToRemove?: string[];
+  /**
+   * 무효화할 쿼리 키
+   * - 단일 쿼리 키: string[]
+   * - 여러 쿼리 키: string[][]
+   */
+  queryKeyToInvalidate?: string[] | string[][];
+  /**
+   * 제거할 쿼리 키
+   * - 단일 쿼리 키: string[]
+   * - 여러 쿼리 키: string[][]
+   */
+  queryKeyToRemove?: string[] | string[][];
   configs?: Omit<AxiosRequestConfig, "method" | "data">;
   options?: Omit<
     UseMutationOptions<ApiResponseType<TRes>, ApiError, { data?: TReq; params?: TParams } | TReq | undefined>,

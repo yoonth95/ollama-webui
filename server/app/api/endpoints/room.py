@@ -106,6 +106,15 @@ async def get_archived_rooms(page: int = 1, limit: int = 10, db: Session = Depen
 
   return JSONResponse(content=create_response(True, "보관된 채팅방 전체 조회", response), status_code=200)
 
+@router.get("/room/{room_id}")
+@handle_exceptions
+async def get_room(room_id: str, db: Session = Depends(get_db)):
+  """채팅방 조회"""
+  logger.info(f"📩 클라이언트 채팅방 조회: {room_id}")
+  response = await RoomService.get_room_service(db, room_id)
+
+  return JSONResponse(content=create_response(True, "채팅방 조회", response), status_code=200)
+
 @router.delete("/room/delete-room/")
 @handle_exceptions
 async def delete_room_no_id():

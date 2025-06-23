@@ -11,7 +11,7 @@ interface ChatRoomItemArchiveButtonPropsType {
 
 const ChatRoomItemArchiveButton = ({ roomId, isNowChatRoom }: ChatRoomItemArchiveButtonPropsType) => {
   const navigate = useNavigate();
-  const deleteChatRoom = useChatRoomStore((state) => state.deleteChatRoom);
+  const updateChatRoomArchive = useChatRoomStore((state) => state.updateChatRoomArchive);
   const archiveChatRoomMutation = useArchiveChatRoom();
 
   const handleArchive = () => {
@@ -19,7 +19,7 @@ const ChatRoomItemArchiveButton = ({ roomId, isNowChatRoom }: ChatRoomItemArchiv
       { roomId },
       {
         onSuccess: () => {
-          deleteChatRoom(roomId);
+          updateChatRoomArchive(roomId, true);
           if (isNowChatRoom) navigate("/");
         },
       },

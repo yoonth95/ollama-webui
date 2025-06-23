@@ -138,14 +138,24 @@ export function useCustomMutation<TRes = undefined, TReq = undefined, TParams = 
       if (showToastOnSuccess && data.message) {
         toast.success(data.message);
       }
-      // 쿼리 키 초기화 - 캐시는 유지하고 데이터만 초기화 (추가 및 업데이트) (queryKeyToInvalidate가 있을 때)
-      if (queryKeyToInvalidate) {
-        queryClient.invalidateQueries({ queryKey: queryKeyToInvalidate });
-      }
-      // 쿼리 키 제거 - 캐시도 제거 (삭제) (queryKeyToRemove가 있을 때)
-      if (queryKeyToRemove) {
-        queryClient.removeQueries({ queryKey: queryKeyToRemove });
-      }
+
+      // 쿼리 키 배열 처리 함수 (단일/다중 모두 지원)
+      const processQueryKeys = (keys: string[] | string[][] | undefined, action: "invalidate" | "remove") => {
+        if (!keys) return;
+        const keyArray: string[][] = Array.isArray(keys[0]) ? (keys as string[][]) : [keys as string[]];
+        keyArray.forEach((key) => {
+          if (action === "invalidate") {
+            queryClient.invalidateQueries({ queryKey: key });
+          } else {
+            queryClient.removeQueries({ queryKey: key });
+          }
+        });
+      };
+
+      // 무효화 및 제거 처리
+      processQueryKeys(queryKeyToInvalidate, "invalidate");
+      processQueryKeys(queryKeyToRemove, "remove");
+
       // 사용자가 options로 전달한 onSuccess가 있으면 실행
       if (options.onSuccess) {
         options.onSuccess(data, variables, context);
