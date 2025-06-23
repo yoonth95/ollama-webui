@@ -42,16 +42,24 @@ class RoomService:
     """채팅방 목록 조회"""
     result = RoomCrud.get_rooms(db, page, limit)
     return {
-      "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"]],
+      "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"] if room is not None],
       "meta": result["meta"]
     }
+
+  @staticmethod
+  async def get_room_service(db: Session, room_id: str) -> RoomResponse:
+    """채팅방 조회"""
+    room = RoomCrud.get_room(db, room_id)
+    if room is None:
+      raise ValueError("채팅방을 찾을 수 없습니다.")
+    return RoomResponse.model_validate(room).model_dump()
 
   @staticmethod
   async def get_archived_rooms_service(db: Session, page: int, limit: int) -> RoomListResponse:
     """보관된 채팅방 목록 조회"""
     result = RoomCrud.get_archived_rooms(db, page, limit)
     return {
-      "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"]],
+      "items": [RoomResponse.model_validate(room).model_dump() for room in result["items"] if room is not None],
       "meta": result["meta"]
     }
   

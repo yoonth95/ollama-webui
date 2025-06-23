@@ -47,6 +47,11 @@ class RoomCrud:
     }
 
   @staticmethod
+  def get_room(db: Session, room_id: str):
+    """채팅방 조회"""
+    return db.query(Room).filter(Room.id == room_id).first()
+
+  @staticmethod
   def get_rooms(db: Session, page: int, limit: int):
     """채팅방 목록 조회(페이지네이션) - 보관되지 않은 채팅방만"""
     return RoomCrud._get_rooms_by_archive_status(db, page, limit, is_archived=False)
